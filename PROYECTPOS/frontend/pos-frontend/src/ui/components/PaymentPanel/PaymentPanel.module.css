@@ -1,0 +1,156 @@
+.wrapper {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.75rem;
+}
+
+.titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  color: #111827;
+}
+
+.metodos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.btnMetodo {
+  padding: 0.4rem 0.85rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f9fafb;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.15s;
+}
+
+.btnMetodo:hover:not(:disabled) {
+  border-color: #4f46e5;
+  background: #eef2ff;
+}
+
+.btnMetodo.activo {
+  border-color: #4f46e5;
+  background: #4f46e5;
+  color: #fff;
+  font-weight: 600;
+}
+
+.btnMetodo:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.campoMonto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.input {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.cambio {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0.25rem 0 0;
+}
+
+.insuficiente { color: #dc2626; }
+.suficiente   { color: #059669; }
+
+.mixto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filaPago {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.selectMetodo {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.inputMixto {
+  width: 120px;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.btnEliminarPago {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.btnAgregarPago {
+  align-self: flex-start;
+  padding: 0.35rem 0.75rem;
+  border: 1px dashed #4f46e5;
+  border-radius: 6px;
+  background: none;
+  color: #4f46e5;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.btnConfirmar {
+  width: 100%;
+  padding: 0.75rem;
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 0.5rem;
+}
+
+.btnConfirmar:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.btnConfirmar:disabled {
+  background: #a5b4fc;
+  cursor: not-allowed;
+}
