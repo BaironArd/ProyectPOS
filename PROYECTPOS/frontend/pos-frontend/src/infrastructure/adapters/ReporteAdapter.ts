@@ -1,18 +1,17 @@
 import type { IReportePort } from '@domain/ports/IReportePort';
 import type { ReporteCierre } from '@domain/types/POSState';
+import { httpFetch } from './httpClient';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 export class ReporteAdapter implements IReportePort {
-  private token: string | null = null;
-  setToken(t: string) { this.token = t; }
-
   async generarCierre(fechaDesde: string, fechaHasta: string): Promise<ReporteCierre> {
-    const res = await fetch(`${API_BASE}/reportes/cierre?desde=${fechaDesde}&hasta=${fechaHasta}`, {
-      headers: this.token ? { Authorization: `Bearer ${this.token}` } : {},
-    });
+    const res = await httpFetch(
+      `${API_BASE}/reportes/cierre?fechaDesde=${fechaDesde}&fechaHasta=${fechaHasta}`
+    );
     if (!res.ok) throw new Error('REPORTE_ERROR');
-    return res.json() as Promise<ReporteCierre>;
+    const json = await res.json() as { data: ReporteCierre };
+    return json.data;
   }
 
   async exportarCSV(reporte: ReporteCierre): Promise<Blob> {

@@ -127,6 +127,8 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
     let nuevoCarrito: ItemCarrito[];
 
     if (existente) {
+      // Validar que no supere el stock disponible
+      if (existente.cantidad >= producto.stock) return;
       nuevoCarrito = carrito.map((i) =>
         i.productoId === producto.id
           ? { ...i, cantidad: i.cantidad + 1, subtotal: calcularSubtotal(i.precioUnitario, i.cantidad + 1) }
@@ -141,6 +143,7 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
           cantidad: 1,
           precioUnitario: producto.precio,
           subtotal: producto.precio,
+          stockDisponible: producto.stock,
         },
       ];
     }
@@ -153,9 +156,9 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
 
   modificarCantidad: (productoId, cantidad) => {
     const { carrito } = get();
+    const item = carrito.find((i) => i.productoId === productoId);
 
     if (cantidad <= 0) {
-      // Eliminar ítem
       const nuevoCarrito = carrito.filter((i) => i.productoId !== productoId);
       const resumen = calcularResumen(nuevoCarrito);
       const nuevoEstado: EstadoUI = nuevoCarrito.length === 0 ? 'RESULTADOS' : 'CARRITO_ACTIVO';
@@ -163,9 +166,13 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
       return;
     }
 
+    // Validar contra stock disponible
+    const stockMax = item?.stockDisponible ?? Infinity;
+    const cantidadFinal = Math.min(cantidad, stockMax);
+
     const nuevoCarrito = carrito.map((i) =>
       i.productoId === productoId
-        ? { ...i, cantidad, subtotal: calcularSubtotal(i.precioUnitario, cantidad) }
+        ? { ...i, cantidad: cantidadFinal, subtotal: calcularSubtotal(i.precioUnitario, cantidadFinal) }
         : i
     );
     const resumen = calcularResumen(nuevoCarrito);

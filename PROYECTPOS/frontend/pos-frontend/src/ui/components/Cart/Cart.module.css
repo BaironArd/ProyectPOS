@@ -108,6 +108,17 @@
   background: #fee2e2;
 }
 
+.accionesItem {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stockAgotado {
+  font-size: 0.85rem;
+  cursor: help;
+}
+
 .btnProceder {
   margin-top: 1rem;
   width: 100%;

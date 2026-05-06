@@ -55,6 +55,7 @@ export function Cart() {
                         <input
                           type="number"
                           min={0}
+                          max={item.stockDisponible}
                           value={item.cantidad}
                           onChange={(e) => {
                             const val = parseInt(e.target.value, 10);
@@ -68,7 +69,9 @@ export function Cart() {
                         <button
                           className={styles.btnCantidad}
                           onClick={() => modificarCantidad(item.productoId, item.cantidad + 1)}
+                          disabled={item.cantidad >= item.stockDisponible}
                           aria-label={`Aumentar cantidad de ${item.nombre}`}
+                          title={item.cantidad >= item.stockDisponible ? `Stock máximo: ${item.stockDisponible}` : ''}
                         >
                           +
                         </button>
@@ -78,13 +81,18 @@ export function Cart() {
                   <td>{formatearPrecio(item.subtotal)}</td>
                   {!soloLectura && (
                     <td>
-                      <button
-                        className={styles.btnEliminar}
-                        onClick={() => eliminarDelCarrito(item.productoId)}
-                        aria-label={`Eliminar ${item.nombre} del carrito`}
-                      >
-                        ✕
-                      </button>
+                      <div className={styles.accionesItem}>
+                        <button
+                          className={styles.btnEliminar}
+                          onClick={() => eliminarDelCarrito(item.productoId)}
+                          aria-label={`Eliminar ${item.nombre} del carrito`}
+                        >
+                          ✕
+                        </button>
+                        {item.cantidad >= item.stockDisponible && (
+                          <span className={styles.stockAgotado} title="Stock máximo alcanzado">⚠️</span>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>

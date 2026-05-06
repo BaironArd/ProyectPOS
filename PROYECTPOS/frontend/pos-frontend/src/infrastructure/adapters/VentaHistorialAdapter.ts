@@ -1,18 +1,15 @@
 import type { IVentaHistorialPort } from '@domain/ports/IVentaHistorialPort';
 import type { ResumenVentaHistorial } from '@domain/types/POSState';
+import { httpFetch } from './httpClient';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 export class VentaHistorialAdapter implements IVentaHistorialPort {
-  private token: string | null = null;
-  setToken(token: string) { this.token = token; }
-
   async listar(): Promise<ResumenVentaHistorial[]> {
-    const res = await fetch(`${API_BASE}/ventas`, {
-      headers: this.token ? { Authorization: `Bearer ${this.token}` } : {},
-    });
+    const res = await httpFetch(`${API_BASE}/ventas?page=0&size=100`);
     if (!res.ok) throw new Error('HISTORIAL_NO_DISPONIBLE');
-    return res.json() as Promise<ResumenVentaHistorial[]>;
+    const json = await res.json() as { data: { items: ResumenVentaHistorial[] } };
+    return json.data.items ?? [];
   }
 }
 

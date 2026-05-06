@@ -34,6 +34,7 @@ export interface ItemCarrito {
   cantidad: number;
   precioUnitario: number;
   subtotal: number;
+  stockDisponible: number;
 }
 
 export interface Resumen {
