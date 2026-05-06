@@ -19,8 +19,10 @@ INSERT INTO productos (nombre, precio, stock, categoria, activo, version) VALUES
 
 -- Usuarios de prueba (passwords hasheados con BCrypt)
 -- cajero01 / 1234
+-- cajero02 / 1234
 -- admin01  / admin123
+-- NOTA: Para regenerar los hashes ejecutar GenerarHashesTest.java
 INSERT INTO usuarios (usuario, password_hash, rol, activo) VALUES
-('cajero01', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'CAJERO', true),
-('cajero02', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'CAJERO', true),
-('admin01',  '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN', true);
+('cajero01', '$2a$10$EblZqNptyYvcLm/VwDpteuS7o/GBqrOkkxbvmq4hnAprkBGkhs5.G', 'CAJERO', true),
+('cajero02', '$2a$10$EblZqNptyYvcLm/VwDpteuS7o/GBqrOkkxbvmq4hnAprkBGkhs5.G', 'CAJERO', true),
+('admin01',  '$2a$10$lDkDPCnMX5b5GNTpnpFQueOuNSMqnGnTmZ9bxnre/xRc0LGb2IQHK', 'ADMIN', true);
