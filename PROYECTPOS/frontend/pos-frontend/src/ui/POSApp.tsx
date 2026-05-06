@@ -51,11 +51,11 @@ export function POSApp({
 }: Props) {
   const estado = usePOSStore((s) => s.estado);
   const sesion = usePOSStore((s) => s.sesion);
-  const resumen = usePOSStore((s) => s.resumen);
   const ventaIdActual = usePOSStore((s) => s.ventaIdActual);
   const cambio = usePOSStore((s) => s.cambio);
   const setEstado = usePOSStore((s) => s.setEstado);
   const resetVenta = usePOSStore((s) => s.resetVenta);
+  const setVentaIdActual = usePOSStore((s) => s.setVentaIdActual);
 
   // Auto-retorno a IDLE tras 3s en VENTA_COMPLETA
   useEffect(() => {
@@ -69,7 +69,12 @@ export function POSApp({
     return <LoginForm authPort={authPort} />;
   }
 
-  const enFlujoVenta = ['IDLE', 'BUSCANDO', 'RESULTADOS', 'CARRITO_ACTIVO', 'CALCULANDO_PAGO', 'PROCESANDO', 'VENTA_COMPLETA', 'ERROR'].includes(estado);
+  // Estados donde se muestra un panel especial a pantalla completa (sin carrito al lado)
+  const panelEspecial = ['HISTORIAL', 'DEVOLUCION', 'INVENTARIO', 'REPORTES'].includes(estado);
+
+  // El panel de venta (búsqueda + carrito) se muestra siempre excepto en paneles especiales
+  // y en VENTA_COMPLETA
+  const mostrarPanelVenta = !panelEspecial && estado !== 'VENTA_COMPLETA';
 
   return (
     <div className={styles.app}>
@@ -78,13 +83,13 @@ export function POSApp({
       <main className={styles.main}>
         <ErrorBanner />
 
-        {/* Paneles especiales */}
+        {/* ── Paneles especiales (ocupan el área principal) ── */}
         {estado === 'HISTORIAL' && (
           <SalesHistory
             historialPort={historialPort}
             onDevolver={(ventaId) => {
+              setVentaIdActual(ventaId);
               setEstado('DEVOLUCION');
-              usePOSStore.getState().setVentaIdActual(ventaId);
             }}
           />
         )}
@@ -93,13 +98,22 @@ export function POSApp({
         {estado === 'INVENTARIO' && <InventoryPanel inventarioPort={inventarioPort} />}
         {estado === 'REPORTES' && <ReportsPanel reportePort={reportePort} />}
 
-        {/* Pantalla de venta completada */}
+        {/* ── Pantalla de venta completada ── */}
         {estado === 'VENTA_COMPLETA' && (
           <div className={styles.ventaCompleta}>
             <div className={styles.exito}>
               <span className={styles.exitoIcono}>✅</span>
               <h2>¡Venta completada!</h2>
-              <p className={styles.cambioTexto}>Cambio: <strong>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(cambio)}</strong></p>
+              <p className={styles.cambioTexto}>
+                Cambio:{' '}
+                <strong>
+                  {new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    maximumFractionDigits: 0,
+                  }).format(cambio)}
+                </strong>
+              </p>
               <p className={styles.ventaId}>ID: {ventaIdActual}</p>
             </div>
             <div className={styles.accionesVenta}>
@@ -114,13 +128,16 @@ export function POSApp({
           </div>
         )}
 
-        {/* Flujo principal de venta */}
-        {enFlujoVenta && estado !== 'VENTA_COMPLETA' && (
+        {/* ── Panel de venta: siempre visible excepto en paneles especiales ── */}
+        {mostrarPanelVenta && (
           <div className={styles.flujoVenta}>
+            {/* Columna izquierda: búsqueda + resultados */}
             <div className={styles.columnaIzq}>
               <SearchBar productoPort={productoPort} />
               <ProductList />
             </div>
+
+            {/* Columna derecha: carrito + resumen + pago (siempre visible) */}
             <div className={styles.columnaDer}>
               <Cart />
               <OrderSummary />

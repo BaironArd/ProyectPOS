@@ -5,8 +5,9 @@ import styles from './OrderSummary.module.css';
 export function OrderSummary() {
   const resumen = usePOSStore((s) => s.resumen);
   const estado = usePOSStore((s) => s.estado);
+  const carrito = usePOSStore((s) => s.carrito);
 
-  const visible = ['CARRITO_ACTIVO', 'CALCULANDO_PAGO', 'PROCESANDO'].includes(estado);
+  const visible = carrito.length > 0 && ['CARRITO_ACTIVO', 'CALCULANDO_PAGO', 'PROCESANDO'].includes(estado);
   if (!visible) return null;
 
   return (

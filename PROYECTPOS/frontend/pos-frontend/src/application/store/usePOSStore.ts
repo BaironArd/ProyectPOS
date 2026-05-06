@@ -18,16 +18,16 @@ import { calcularResumen, calcularCambio, calcularSubtotal } from '@domain/calcu
 const TRANSICIONES_VALIDAS: Partial<Record<EstadoUI, EstadoUI[]>> = {
   LOGIN: ['IDLE'],
   IDLE: ['BUSCANDO', 'HISTORIAL', 'INVENTARIO', 'REPORTES', 'LOGIN', 'ERROR'],
-  BUSCANDO: ['RESULTADOS', 'ERROR'],
-  RESULTADOS: ['CARRITO_ACTIVO', 'BUSCANDO', 'HISTORIAL', 'ERROR'],
-  CARRITO_ACTIVO: ['CALCULANDO_PAGO', 'RESULTADOS', 'ERROR'],
+  BUSCANDO: ['RESULTADOS', 'IDLE', 'ERROR'],
+  RESULTADOS: ['CARRITO_ACTIVO', 'BUSCANDO', 'IDLE', 'HISTORIAL', 'INVENTARIO', 'REPORTES', 'ERROR'],
+  CARRITO_ACTIVO: ['CALCULANDO_PAGO', 'RESULTADOS', 'HISTORIAL', 'INVENTARIO', 'REPORTES', 'ERROR'],
   CALCULANDO_PAGO: ['PROCESANDO', 'CARRITO_ACTIVO', 'ERROR'],
   PROCESANDO: ['VENTA_COMPLETA', 'ERROR'],
   VENTA_COMPLETA: ['IDLE', 'DEVOLUCION', 'ERROR'],
-  HISTORIAL: ['IDLE', 'RESULTADOS', 'DEVOLUCION', 'ERROR'],
+  HISTORIAL: ['IDLE', 'RESULTADOS', 'DEVOLUCION', 'INVENTARIO', 'REPORTES', 'ERROR'],
   DEVOLUCION: ['IDLE', 'ERROR'],
-  INVENTARIO: ['IDLE', 'ERROR'],
-  REPORTES: ['IDLE', 'ERROR'],
+  INVENTARIO: ['IDLE', 'HISTORIAL', 'REPORTES', 'ERROR'],
+  REPORTES: ['IDLE', 'HISTORIAL', 'INVENTARIO', 'ERROR'],
   ERROR: ['IDLE'],
 };
 
@@ -225,7 +225,9 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
 
   verHistorial: () => {
     const { estado } = get();
-    if (estado !== 'IDLE' && estado !== 'RESULTADOS') return;
+    // Guardar estado previo para poder volver — funciona desde cualquier estado autenticado
+    const estadosNoNavegables: EstadoUI[] = ['LOGIN', 'PROCESANDO'];
+    if (estadosNoNavegables.includes(estado)) return;
     set({ estadoPrevio: estado, estado: 'HISTORIAL' });
   },
 

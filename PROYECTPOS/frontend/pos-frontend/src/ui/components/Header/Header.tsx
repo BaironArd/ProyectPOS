@@ -16,7 +16,9 @@ export function Header({ authPort }: Props) {
   const { logout } = useAuth(authPort);
 
   const itemsCarrito = carrito.length;
-  const puedeVerHistorial = estado === 'IDLE' || estado === 'RESULTADOS';
+
+  // Solo bloquear navegación durante PROCESANDO (venta en curso) o CALCULANDO_PAGO
+  const navegacionBloqueada = estado === 'PROCESANDO' || estado === 'CALCULANDO_PAGO';
 
   return (
     <header className={styles.header}>
@@ -27,19 +29,29 @@ export function Header({ authPort }: Props) {
       <nav className={styles.nav}>
         {sesion?.rol === 'ADMIN' && (
           <>
-            <button className={styles.btnNav} onClick={() => setEstado('INVENTARIO')}>
+            <button
+              className={`${styles.btnNav} ${estado === 'INVENTARIO' ? styles.activo : ''}`}
+              onClick={() => setEstado('INVENTARIO')}
+              disabled={navegacionBloqueada}
+              aria-label="Ir a Inventario"
+            >
               📦 Inventario
             </button>
-            <button className={styles.btnNav} onClick={() => setEstado('REPORTES')}>
+            <button
+              className={`${styles.btnNav} ${estado === 'REPORTES' ? styles.activo : ''}`}
+              onClick={() => setEstado('REPORTES')}
+              disabled={navegacionBloqueada}
+              aria-label="Ir a Reportes"
+            >
               📊 Reportes
             </button>
           </>
         )}
 
         <button
-          className={styles.btnNav}
+          className={`${styles.btnNav} ${estado === 'HISTORIAL' ? styles.activo : ''}`}
           onClick={verHistorial}
-          disabled={!puedeVerHistorial}
+          disabled={navegacionBloqueada}
           aria-label="Ver historial de ventas"
         >
           🕐 Historial
