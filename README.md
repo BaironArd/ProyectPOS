@@ -22,7 +22,8 @@ Sistema completo de punto de venta (POS) con arquitectura hexagonal, desarrollad
 
 ProyectPOS es un sistema de punto de venta diseñado para cajeros y administradores. Permite gestionar el ciclo completo de ventas: búsqueda de productos, construcción de carrito, procesamiento de pagos (efectivo, tarjeta, transferencia y mixto), confirmación de ventas, impresión de recibos, historial de ventas, devoluciones, gestión de inventario y reportes de cierre de caja.
 
-> **[imagen de pantalla principal del POS — vista del cajero con búsqueda y carrito]**
+> **[imagen de pantalla principal del POS — vista del cajero con búsqueda y carrito]** <img width="1871" height="955" alt="image" src="https://github.com/user-attachments/assets/de80d968-efc1-4000-8d69-f8735b46d5db" />
+
 
 ---
 
