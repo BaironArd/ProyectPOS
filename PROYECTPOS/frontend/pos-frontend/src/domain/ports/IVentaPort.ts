@@ -5,6 +5,8 @@ export interface ConfirmarVentaPayload {
   total: number;
   metodoPago: MetodoPago;
   pagos: PagoItem[];
+  idempotencyKey: string;
+  usuarioCajero?: string;
 }
 
 export interface ConfirmarVentaResult {

@@ -35,7 +35,12 @@ export function ReportsPanel({ reportePort }: Props) {
         </button>
       </div>
 
-      {reporte ? (
+      {/* SPEC-013: sin ventas en el período */}
+      {reporte && reporte.totalVentas === 0 && (
+        <p className={styles.vacio}>Sin ventas en el período seleccionado</p>
+      )}
+
+      {reporte && reporte.totalVentas > 0 && (
         <>
           <div className={styles.resumen}>
             <div className={styles.stat}><span>Total ventas</span><strong>{reporte.totalVentas}</strong></div>
@@ -57,9 +62,11 @@ export function ReportsPanel({ reportePort }: Props) {
 
           <button className={styles.btnCSV} onClick={exportarCSV}>⬇ Exportar CSV</button>
         </>
-      ) : !cargando ? (
+      )}
+
+      {!reporte && !cargando && (
         <p className={styles.vacio}>Selecciona un rango de fechas y haz clic en Generar</p>
-      ) : null}
+      )}
     </div>
   );
 }

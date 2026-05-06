@@ -83,7 +83,7 @@ export function POSApp({
           <SalesHistory
             historialPort={historialPort}
             onDevolver={(ventaId) => {
-              usePOSStore.getState().setEstado('DEVOLUCION');
+              setEstado('DEVOLUCION');
               usePOSStore.getState().setVentaIdActual(ventaId);
             }}
           />

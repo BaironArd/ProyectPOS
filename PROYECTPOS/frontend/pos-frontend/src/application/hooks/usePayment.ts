@@ -2,6 +2,15 @@ import { useState } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import type { IVentaPort } from '@domain/ports/IVentaPort';
 
+/** Genera un UUID v4 simple para idempotencia */
+function generarIdempotencyKey(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export function usePayment(ventaPort: IVentaPort) {
   const [procesando, setProcesando] = useState(false);
 
@@ -10,6 +19,7 @@ export function usePayment(ventaPort: IVentaPort) {
   const metodoPago = usePOSStore((s) => s.metodoPago);
   const pagos = usePOSStore((s) => s.pagos);
   const montoPagado = usePOSStore((s) => s.montoPagado);
+  const sesion = usePOSStore((s) => s.sesion);
   const setEstado = usePOSStore((s) => s.setEstado);
   const setError = usePOSStore((s) => s.setError);
   const setVentaIdActual = usePOSStore((s) => s.setVentaIdActual);
@@ -28,6 +38,8 @@ export function usePayment(ventaPort: IVentaPort) {
         total: resumen.total,
         metodoPago,
         pagos,
+        idempotencyKey: generarIdempotencyKey(),
+        usuarioCajero: sesion?.usuario,
       });
 
       if (result.ok) {
