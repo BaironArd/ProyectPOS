@@ -80,10 +80,15 @@ public class VentaController {
                         .toList()
                 : List.of();
 
+        // Si el frontend no envía idempotencyKey, generar uno en el servidor
+        String idempotencyKey = (req.idempotencyKey() != null && !req.idempotencyKey().isBlank())
+                ? req.idempotencyKey()
+                : java.util.UUID.randomUUID().toString();
+
         return new ConfirmarVentaCommand(
                 items,
                 req.montoPagado(),
-                req.idempotencyKey(),
+                idempotencyKey,
                 req.usuarioCajero(),
                 req.metodoPago(),
                 pagos

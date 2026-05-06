@@ -14,7 +14,7 @@ public record ConfirmarVentaRequest(
         @Positive(message = "El monto pagado debe ser positivo")
         long montoPagado,
 
-        @NotBlank(message = "La clave de idempotencia es requerida")
+        // idempotencyKey es opcional — si no se envía, se genera uno en el servidor
         String idempotencyKey,
 
         String usuarioCajero,
