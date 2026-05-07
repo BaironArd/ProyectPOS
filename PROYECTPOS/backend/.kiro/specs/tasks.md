@@ -1,42 +1,42 @@
-# Plan de Tareas — Backend POS
-**Versión:** 1.3
-**Referencias:** especificaciones_backend.md v1.3 · diseno_backend.md v1.3
-**Metodología:** Spec-Driven Development — cada tarea implementa y verifica una spec de API
+# Implementation Plan — Backend POS
+**Version:** 1.3
+**References:** requirements.md v1.3 · design.md v1.3
+**Methodology:** Spec-Driven Development — each task implements and verifies an API spec
 
 ---
 
-## 1. Principio de trazabilidad
+## 1. Traceability Principle
 
-Una tarea de backend está **completa** cuando:
+A backend task is **complete** when:
 
-1. El código compila sin errores (`mvn clean compile`)
-2. Los tests unitarios de la lógica de dominio pasan (`mvn test -pl domain`)
-3. Los tests de integración del endpoint confirman los criterios de aceptación de la spec asociada
+1. The code compiles without errors (`mvn clean compile`)
+2. Domain logic unit tests pass (`mvn test -pl domain`)
+3. Endpoint integration tests confirm the acceptance criteria of the associated spec
 
-El criterio de "terminado" no es subjetivo: está definido por la spec.
+The "done" criterion is not subjective: it is defined by the spec.
 
 ---
 
-## 2. Stack tecnológico y entorno de desarrollo
+## 2. Technology Stack and Development Environment
 
-### 2.1 Herramientas requeridas
+### 2.1 Required Tools
 
-| Herramienta | Versión | Propósito |
+| Tool | Version | Purpose |
 |---|---|---|
-| Java (JDK) | 21 LTS | Runtime y compilador |
-| Maven | 3.9.x | Gestor de dependencias y build |
-| Spring Boot | 3.2.x | Framework de aplicación |
-| Spring Data JPA | 3.2.x | Persistencia con JPA/Hibernate |
-| Spring Security | 6.x | Autenticación y autorización JWT |
-| H2 Database | 2.x | Base de datos en memoria (dev/test) |
-| PostgreSQL | 15.x | Base de datos de producción |
+| Java (JDK) | 21 LTS | Runtime and compiler |
+| Maven | 3.9.x | Dependency manager and build |
+| Spring Boot | 3.2.x | Application framework |
+| Spring Data JPA | 3.2.x | Persistence with JPA/Hibernate |
+| Spring Security | 6.x | JWT authentication and authorization |
+| H2 Database | 2.x | In-memory database (dev/test) |
+| PostgreSQL | 15.x | Production database |
 | jqwik | 1.8.x | Property-Based Testing |
-| JaCoCo | 0.8.x | Cobertura de código |
-| Mockito | 5.x | Mocking en tests unitarios |
+| JaCoCo | 0.8.x | Code coverage |
+| Mockito | 5.x | Mocking in unit tests |
 
-### 2.2 Generación del proyecto
+### 2.2 Project Generation
 
-Usar [Spring Initializr](https://start.spring.io/) con las siguientes opciones:
+Use [Spring Initializr](https://start.spring.io/) with the following options:
 
 ```
 Project:      Maven
@@ -46,10 +46,10 @@ Group:        com.pos
 Artifact:     pos-backend
 Java:         21
 Dependencies: Spring Web, Spring Data JPA, Spring Security,
-              Validation, H2 Database, Lombok (opcional)
+              Validation, H2 Database, Lombok (optional)
 ```
 
-### 2.3 Dependencias clave (`pom.xml`)
+### 2.3 Key dependencies (`pom.xml`)
 
 ```xml
 <properties>
@@ -74,20 +74,20 @@ Dependencies: Spring Web, Spring Data JPA, Spring Security,
         <scope>runtime</scope>
     </dependency>
 
-    <!-- PostgreSQL (producción) -->
+    <!-- PostgreSQL (production) -->
     <dependency>
         <groupId>org.postgresql</groupId>
         <artifactId>postgresql</artifactId>
         <scope>runtime</scope>
     </dependency>
 
-    <!-- Validación -->
+    <!-- Validation -->
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
 
-    <!-- Seguridad + JWT -->
+    <!-- Security + JWT -->
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-security</artifactId>
@@ -109,7 +109,7 @@ Dependencies: Spring Web, Spring Data JPA, Spring Security,
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-test</artifactId>
         <scope>test</scope>
-        <!-- Incluye JUnit 5, Mockito y MockMvc -->
+        <!-- Includes JUnit 5, Mockito and MockMvc -->
     </dependency>
     <dependency>
         <groupId>net.jqwik</groupId>
@@ -147,10 +147,10 @@ Dependencies: Spring Web, Spring Data JPA, Spring Security,
 </build>
 ```
 
-### 2.4 Configuración de perfiles (`application.properties`)
+### 2.4 Profile configuration (`application.properties`)
 
 ```properties
-# Perfil dev (H2 en memoria)
+# Dev profile (H2 in memory)
 spring.datasource.url=jdbc:h2:mem:posdb
 spring.datasource.driver-class-name=org.h2.Driver
 spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
@@ -160,124 +160,124 @@ spring.jpa.hibernate.ddl-auto=create-drop
 server.port=8080
 
 # JWT
-jwt.secret=clave-secreta-minimo-256-bits-cambiar-en-produccion
+jwt.secret=secret-key-minimum-256-bits-change-in-production
 jwt.expiration=28800
 ```
 
-### 2.5 Comandos disponibles
+### 2.5 Available commands
 
 ```bash
-# Compilar
+# Compile
 mvn clean compile
 
-# Ejecutar en dev
+# Run in dev
 mvn spring-boot:run
 
-# Tests unitarios
+# Unit tests
 mvn test
 
-# Tests + cobertura JaCoCo
+# Tests + JaCoCo coverage
 mvn verify
 
-# Build para producción
+# Production build
 mvn clean package -DskipTests
 ```
 
-### 2.6 Criterio de "entorno listo"
+### 2.6 "Environment ready" criterion
 
-- [ ] `mvn clean compile` termina sin errores
-- [ ] `mvn spring-boot:run` levanta la app en `http://localhost:8080`
-- [ ] `GET http://localhost:8080/api/v1/productos?q=mo` retorna 200 (con datos de `data.sql`)
-- [ ] `mvn test` ejecuta todos los tests y reporta resultados
-- [ ] `mvn verify` genera reporte de cobertura en `target/site/jacoco/`
+- [ ] `mvn clean compile` finishes without errors
+- [ ] `mvn spring-boot:run` starts the app at `http://localhost:8080`
+- [ ] `GET http://localhost:8080/api/v1/productos?q=mo` returns 200 (with data from `data.sql`)
+- [ ] `mvn test` runs all tests and reports results
+- [ ] `mvn verify` generates coverage report in `target/site/jacoco/`
 
 ---
 
-## 3. Resumen de tareas
+## 3. Task Summary
 
-| ID | Nombre | Spec(s) | Capa | Estimación | Prioridad |
+| ID | Name | Spec(s) | Layer | Estimate | Priority |
 |---|---|---|---|---|---|
-| T-BE-01 | Scaffolding del proyecto | — | Configuración | 1h | Alta |
-| T-BE-02 | Modelo de dominio y Value Objects | SPEC-BE-003 | Dominio | 3h | Alta |
-| T-BE-03 | Excepciones de dominio | SPEC-BE-005 | Dominio | 1h | Alta |
-| T-BE-04 | Puertos (interfaces Use Cases y Repositorios) | Todos | Dominio | 1h | Alta |
-| T-BE-05 | Servicio de dominio: CalculadoraVenta | SPEC-BE-003 | Dominio | 2h | Alta |
-| T-BE-06 | Servicio de dominio: ProductoService | SPEC-BE-001, BE-002 | Dominio | 2h | Alta |
-| T-BE-07 | Servicio de dominio: VentaService | SPEC-BE-003, BE-004 | Dominio | 3h | Alta |
-| T-BE-08 | Adaptador de salida: ProductoJpaAdapter | SPEC-BE-001, BE-002 | Infraestructura | 2h | Alta |
-| T-BE-09 | Adaptador de salida: VentaJpaAdapter | SPEC-BE-003, BE-004 | Infraestructura | 2h | Alta |
-| T-BE-10 | Adaptador de entrada: ProductoController | SPEC-BE-001, BE-002 | Infraestructura | 2h | Alta |
-| T-BE-11 | Adaptador de entrada: VentaController | SPEC-BE-003, BE-004 | Infraestructura | 2h | Alta |
-| T-BE-12 | Manejador global de errores | SPEC-BE-005 | Infraestructura | 1h | Alta |
-| T-BE-13 | Tests unitarios de dominio | SPEC-BE-001 al 004 | Tests | 3h | Media |
-| T-BE-14 | Tests de integración de controllers | Todos | Tests | 4h | Media |
-| T-BE-15 | Datos iniciales (data.sql) y CORS | — | Configuración | 1h | Media |
-| T-BE-16 | Historial de ventas paginado | SPEC-BE-006 | Dominio + Infra | 3h | Media |
-| T-BE-17 | Concurrencia de stock (Optimistic Locking) | SPEC-BE-007 | Infraestructura | 2h | Media |
-| T-BE-18 | Búsqueda paginada de productos | SPEC-BE-001b | Dominio + Infra | 2h | Media |
-| T-BE-19 | Autenticación JWT (Login / Logout) | SPEC-BE-008 | Dominio + Infra | 4h | Alta |
-| T-BE-20 | Devolución de ventas | SPEC-BE-009 | Dominio + Infra | 3h | Alta |
-| T-BE-21 | Gestión de inventario (Admin) | SPEC-BE-010 | Dominio + Infra | 4h | Alta |
-| T-BE-22 | Reportes de cierre de caja (Admin) | SPEC-BE-011 | Dominio + Infra | 3h | Alta |
+| T-BE-01 | Project scaffolding | — | Configuration | 1h | High |
+| T-BE-02 | Domain model and Value Objects | SPEC-BE-003 | Domain | 3h | High |
+| T-BE-03 | Domain exceptions | SPEC-BE-005 | Domain | 1h | High |
+| T-BE-04 | Ports (Use Case and Repository interfaces) | All | Domain | 1h | High |
+| T-BE-05 | Domain service: CalculadoraVenta | SPEC-BE-003 | Domain | 2h | High |
+| T-BE-06 | Domain service: ProductoService | SPEC-BE-001, BE-002 | Domain | 2h | High |
+| T-BE-07 | Domain service: VentaService | SPEC-BE-003, BE-004 | Domain | 3h | High |
+| T-BE-08 | Outbound adapter: ProductoJpaAdapter | SPEC-BE-001, BE-002 | Infrastructure | 2h | High |
+| T-BE-09 | Outbound adapter: VentaJpaAdapter | SPEC-BE-003, BE-004 | Infrastructure | 2h | High |
+| T-BE-10 | Inbound adapter: ProductoController | SPEC-BE-001, BE-002 | Infrastructure | 2h | High |
+| T-BE-11 | Inbound adapter: VentaController | SPEC-BE-003, BE-004 | Infrastructure | 2h | High |
+| T-BE-12 | Global error handler | SPEC-BE-005 | Infrastructure | 1h | High |
+| T-BE-13 | Domain unit tests | SPEC-BE-001 to 004 | Tests | 3h | Medium |
+| T-BE-14 | Controller integration tests | All | Tests | 4h | Medium |
+| T-BE-15 | Initial data (data.sql) and CORS | — | Configuration | 1h | Medium |
+| T-BE-16 | Paginated sales history | SPEC-BE-006 | Domain + Infra | 3h | Medium |
+| T-BE-17 | Stock concurrency (Optimistic Locking) | SPEC-BE-007 | Infrastructure | 2h | Medium |
+| T-BE-18 | Paginated product search | SPEC-BE-001b | Domain + Infra | 2h | Medium |
+| T-BE-19 | JWT authentication (Login / Logout) | SPEC-BE-008 | Domain + Infra | 4h | High |
+| T-BE-20 | Sale returns | SPEC-BE-009 | Domain + Infra | 3h | High |
+| T-BE-21 | Inventory management (Admin) | SPEC-BE-010 | Domain + Infra | 4h | High |
+| T-BE-22 | End-of-day reports (Admin) | SPEC-BE-011 | Domain + Infra | 3h | High |
 
-**Total estimado:** ~51 horas de desarrollo backend
-
----
-
-## 4. Tareas detalladas
+**Total estimate:** ~51 hours of backend development
 
 ---
 
-### T-BE-01 — Scaffolding del proyecto Spring Boot
-
-**Descripción:** Inicializar el proyecto con la estructura hexagonal y las dependencias correctas.
-
-**Entregables:**
-- Proyecto generado con Spring Initializr: Spring Web, Spring Data JPA, Validation, H2
-- Estructura de paquetes según `diseno_backend.md §11` creada vacía
-- `application.properties` configurado con H2 en memoria para dev
-- `pom.xml` con las dependencias de `diseno_backend.md §12`
-
-**Criterios de aceptación:**
-- [ ] El proyecto compila con `mvn clean compile` sin errores
-- [ ] `mvn spring-boot:run` levanta la aplicación en puerto 8080
-- [ ] La estructura de paquetes refleja exactamente la arquitectura hexagonal definida
-- [ ] El paquete `domain/` no contiene ningún import de `org.springframework` ni de `jakarta.persistence`
-
-**Dependencias previas:** Ninguna
-**Estimación:** 1h
+## 4. Detailed Tasks
 
 ---
 
-### T-BE-02 — Modelo de dominio y Value Objects
+### T-BE-01 — Spring Boot Project Scaffolding
 
-**Descripción:** Implementar las entidades de dominio y value objects. Este código no puede tener ninguna anotación de Spring ni de JPA.
+**Description:** Initialize the project with the hexagonal structure and correct dependencies.
 
-**Entregables:**
-- `Producto.java` con métodos `tieneStock(int)` y `descontarStock(int)`
-- `Venta.java` con sus campos y constructor
+**Deliverables:**
+- Project generated with Spring Initializr: Spring Web, Spring Data JPA, Validation, H2
+- Package structure per `design.md §11` created empty
+- `application.properties` configured with H2 in memory for dev
+- `pom.xml` with the dependencies from `design.md §12`
+
+**Acceptance criteria:**
+- [ ] The project compiles with `mvn clean compile` without errors
+- [ ] `mvn spring-boot:run` starts the application on port 8080
+- [ ] The package structure exactly reflects the defined hexagonal architecture
+- [ ] The `domain/` package contains no imports from `org.springframework` or `jakarta.persistence`
+
+**Prerequisites:** None
+**Estimate:** 1h
+
+---
+
+### T-BE-02 — Domain Model and Value Objects
+
+**Description:** Implement the domain entities and value objects. This code cannot have any Spring or JPA annotations.
+
+**Deliverables:**
+- `Producto.java` with methods `tieneStock(int)` and `descontarStock(int)`
+- `Venta.java` with its fields and constructor
 - `ItemVenta.java`
-- `Dinero.java` como `record` inmutable con operaciones: `mas`, `menos`, `por`, `iva`, `esMenorQue`, `toPesos`, `dePesos`
-- `ResumenVenta.java` como `record`
+- `Dinero.java` as an immutable `record` with operations: `mas`, `menos`, `por`, `iva`, `esMenorQue`, `toPesos`, `dePesos`
+- `ResumenVenta.java` as a `record`
 - `EstadoVenta.java` enum: `COMPLETADA`, `CANCELADA`
 
-**Criterios de aceptación:**
-- [ ] Ninguna clase del paquete `domain/model` tiene imports de `org.springframework` ni de `jakarta.persistence`
-- [ ] `Dinero.iva()` retorna `Math.round(centavos × 0.19)` — verificable con test unitario
-- [ ] `Dinero.menos(otro)` retorna una nueva instancia con la diferencia — necesario para calcular cambio en `CalculadoraVenta`
-- [ ] `Producto.descontarStock()` lanza `StockInsuficienteException` si `cantidad > stock` — verificable con test unitario
-- [ ] `Dinero` es inmutable: cada operación retorna una nueva instancia, nunca modifica `this`
+**Acceptance criteria:**
+- [ ] No class in the `domain/model` package has imports from `org.springframework` or `jakarta.persistence`
+- [ ] `Dinero.iva()` returns `Math.round(centavos × 0.19)` — verifiable with unit test
+- [ ] `Dinero.menos(otro)` returns a new instance with the difference — needed to calculate change in `CalculadoraVenta`
+- [ ] `Producto.descontarStock()` throws `StockInsuficienteException` if `cantidad > stock` — verifiable with unit test
+- [ ] `Dinero` is immutable: each operation returns a new instance, never modifies `this`
 
-**Dependencias previas:** T-BE-01
-**Estimación:** 3h
+**Prerequisites:** T-BE-01
+**Estimate:** 3h
 
 ---
 
-### T-BE-03 — Excepciones de dominio
+### T-BE-03 — Domain Exceptions
 
-**Descripción:** Crear todas las excepciones definidas en `diseno_backend.md §6`. Son clases del dominio: no dependen de Spring ni de HTTP.
+**Description:** Create all exceptions defined in `design.md §6`. They are domain classes: they do not depend on Spring or HTTP.
 
-**Entregables:**
+**Deliverables:**
 - `StockInsuficienteException.java`
 - `MontoInsuficienteException.java`
 - `ProductoNotFoundException.java`
@@ -285,56 +285,56 @@ mvn clean package -DskipTests
 - `CarritoVacioException.java`
 - `QueryDemasiadoCortaException.java`
 
-Cada excepción extiende `RuntimeException` y recibe parámetros para construir un mensaje descriptivo.
+Each exception extends `RuntimeException` and receives parameters to build a descriptive message.
 
-**Criterios de aceptación:**
-- [ ] Ninguna excepción tiene imports de Spring ni de HTTP
-- [ ] El mensaje de cada excepción menciona el valor que causó el error (ej: `"Stock insuficiente para producto id=1. Solicitado: 5, disponible: 2."`)
-- [ ] Son `RuntimeException` (unchecked) para no contaminar las firmas de los métodos del dominio
-- [ ] Cada excepción mapea a exactamente un código de error de `especificaciones_backend.md §3.4`
+**Acceptance criteria:**
+- [ ] No exception has Spring or HTTP imports
+- [ ] Each exception message mentions the value that caused the error (e.g.: `"Insufficient stock for product id=1. Requested: 5, available: 2."`)
+- [ ] They are `RuntimeException` (unchecked) to avoid contaminating domain method signatures
+- [ ] Each exception maps to exactly one error code from `requirements.md §3.4`
 
-**Dependencias previas:** T-BE-01
-**Estimación:** 1h
+**Prerequisites:** T-BE-01
+**Estimate:** 1h
 
 ---
 
-### T-BE-04 — Puertos: interfaces de Use Cases y Repositorios
+### T-BE-04 — Ports: Use Case and Repository Interfaces
 
-**Descripción:** Definir las interfaces que constituyen los contratos entre capas. Son el corazón de la inversión de dependencias.
+**Description:** Define the interfaces that constitute the contracts between layers. They are the heart of dependency inversion.
 
-**Entregables:**
+**Deliverables:**
 
-Puertos de entrada (`domain/port/in/`):
+Inbound ports (`domain/port/in/`):
 - `BuscarProductosUseCase.java`
 - `ObtenerProductoUseCase.java`
 - `ConfirmarVentaUseCase.java`
 - `ObtenerVentaUseCase.java`
 - `ConfirmarVentaCommand.java` (record)
 
-Puertos de salida (`domain/port/out/`):
+Outbound ports (`domain/port/out/`):
 - `ProductoRepository.java`
 - `VentaRepository.java`
 
-**Criterios de aceptación:**
-- [ ] Ninguna interfaz tiene imports fuera de `java.*` y del propio paquete `domain`
-- [ ] `ConfirmarVentaCommand` es un `record` con campos `items` y `montoPagado`
-- [ ] Los métodos de los repositorios usan `Optional<T>` donde el resultado puede ser nulo
-- [ ] Los Use Cases reciben Commands o tipos primitivos — nunca DTOs de la capa web
-- [ ] `ProductoRepository` incluye el método `saveAll(List<Producto>)` requerido por `VentaService`
+**Acceptance criteria:**
+- [ ] No interface has imports outside `java.*` and the `domain` package itself
+- [ ] `ConfirmarVentaCommand` is a `record` with fields `items` and `montoPagado`
+- [ ] Repository methods use `Optional<T>` where the result can be null
+- [ ] Use Cases receive Commands or primitive types — never web layer DTOs
+- [ ] `ProductoRepository` includes the `saveAll(List<Producto>)` method required by `VentaService`
 
-**Dependencias previas:** T-BE-02, T-BE-03
-**Estimación:** 1h
+**Prerequisites:** T-BE-02, T-BE-03
+**Estimate:** 1h
 
 ---
 
-### T-BE-05 — Servicio de dominio: CalculadoraVenta
+### T-BE-05 — Domain Service: CalculadoraVenta
 
-**Descripción:** Implementar la lógica de cálculo financiero de la venta. Es un POJO puro del dominio, verificable sin Spring.
+**Description:** Implement the financial calculation logic for the sale. It is a pure domain POJO, verifiable without Spring.
 
-**Entregables:**
-- `CalculadoraVenta.java` (POJO, sin anotaciones de Spring) con método `calcular(List<ItemVenta>, Dinero montoPagado): ResumenVenta`
+**Deliverables:**
+- `CalculadoraVenta.java` (POJO, no Spring annotations) with method `calcular(List<ItemVenta>, Dinero montoPagado): ResumenVenta`
 
-La lógica implementa exactamente las fórmulas de SPEC-BE-003:
+The logic implements exactly the formulas from SPEC-BE-003:
 
 ```
 subtotal = Σ item.subtotal
@@ -343,239 +343,239 @@ total    = subtotal.mas(iva)
 cambio   = montoPagado.menos(total)
 ```
 
-**Criterios de aceptación:**
-- [ ] `calcular` con carrito vacío retorna `subtotal=0, iva=0, total=0`
-- [ ] `calcular` con un ítem de $100.000 retorna `subtotal=100.000, iva=19.000, total=119.000`
-- [ ] `calcular` retorna `cambio` negativo si `montoPagado < total` — la validación la hace `VentaService`, no la calculadora
-- [ ] Los valores coinciden exactamente con los ejemplos numéricos de SPEC-BE-003
-- [ ] La clase no tiene ninguna anotación de Spring (`@Component`, `@Service`, etc.)
+**Acceptance criteria:**
+- [ ] `calcular` with empty cart returns `subtotal=0, iva=0, total=0`
+- [ ] `calcular` with one item of $100,000 returns `subtotal=100,000, iva=19,000, total=119,000`
+- [ ] `calcular` returns negative `cambio` if `montoPagado < total` — validation is done by `VentaService`, not the calculator
+- [ ] Values match exactly the numerical examples in SPEC-BE-003
+- [ ] The class has no Spring annotations (`@Component`, `@Service`, etc.)
 
-**Dependencias previas:** T-BE-02, T-BE-04
-**Estimación:** 2h
+**Prerequisites:** T-BE-02, T-BE-04
+**Estimate:** 2h
 
 ---
 
-### T-BE-06 — Servicio de dominio: ProductoService
+### T-BE-06 — Domain Service: ProductoService
 
 **Specs:** SPEC-BE-001, SPEC-BE-002
 
-**Descripción:** Implementar `ProductoService` como POJO que implementa `BuscarProductosUseCase` y `ObtenerProductoUseCase`. Depende de `ProductoRepository` (interfaz), nunca del adaptador JPA.
+**Description:** Implement `ProductoService` as a POJO that implements `BuscarProductosUseCase` and `ObtenerProductoUseCase`. Depends on `ProductoRepository` (interface), never on the JPA adapter.
 
-**Entregables:**
-- `ProductoService.java` (POJO) con inyección por constructor de `ProductoRepository`
-- Método `buscar(String query)`: valida longitud mínima, delega al repositorio
-- Método `obtener(Long id)`: lanza `ProductoNotFoundException` si no existe
+**Deliverables:**
+- `ProductoService.java` (POJO) with constructor injection of `ProductoRepository`
+- Method `buscar(String query)`: validates minimum length, delegates to repository
+- Method `obtener(Long id)`: throws `ProductoNotFoundException` if not found
 
-**Criterios de aceptación:**
-- [ ] `buscar(null)` lanza `QueryDemasiadoCortaException` (SPEC-BE-001)
-- [ ] `buscar("a")` lanza `QueryDemasiadoCortaException` (SPEC-BE-001)
-- [ ] `buscar("mo")` llama a `productoRepository.buscarPorNombre("mo")` sin modificar la query
-- [ ] `obtener(99L)` lanza `ProductoNotFoundException` si el repositorio retorna `Optional.empty()` (SPEC-BE-002)
-- [ ] La clase no tiene `@Autowired` ni `@Service` — solo inyección por constructor (DIP)
+**Acceptance criteria:**
+- [ ] `buscar(null)` throws `QueryDemasiadoCortaException` (SPEC-BE-001)
+- [ ] `buscar("a")` throws `QueryDemasiadoCortaException` (SPEC-BE-001)
+- [ ] `buscar("mo")` calls `productoRepository.buscarPorNombre("mo")` without modifying the query
+- [ ] `obtener(99L)` throws `ProductoNotFoundException` if the repository returns `Optional.empty()` (SPEC-BE-002)
+- [ ] The class has no `@Autowired` or `@Service` — only constructor injection (DIP)
 
-**Dependencias previas:** T-BE-03, T-BE-04
-**Estimación:** 2h
+**Prerequisites:** T-BE-03, T-BE-04
+**Estimate:** 2h
 
 ---
 
-### T-BE-07 — Servicio de dominio: VentaService
+### T-BE-07 — Domain Service: VentaService
 
 **Specs:** SPEC-BE-003, SPEC-BE-004
 
-**Descripción:** Implementar `VentaService` como POJO. Es la pieza más compleja del dominio: orquesta validaciones, cálculo, descuento de stock y persistencia.
+**Description:** Implement `VentaService` as a POJO. It is the most complex piece of the domain: orchestrates validations, calculation, stock deduction and persistence.
 
-**Entregables:**
-- `VentaService.java` (POJO) con inyección por constructor de `ProductoRepository`, `VentaRepository`, `CalculadoraVenta`
-- Método `confirmar(ConfirmarVentaCommand)` con la lógica completa
-- Método `obtener(String ventaId)` que lanza `VentaNotFoundException`
+**Deliverables:**
+- `VentaService.java` (POJO) with constructor injection of `ProductoRepository`, `VentaRepository`, `CalculadoraVenta`
+- Method `confirmar(ConfirmarVentaCommand)` with the complete logic
+- Method `obtener(String ventaId)` that throws `VentaNotFoundException`
 
-**Lógica de `confirmar`:**
-1. Validar que `items` no esté vacío → `CarritoVacioException`
-2. Resolver cada producto por id → `ProductoNotFoundException` si alguno falta
-3. Construir `List<ItemVenta>` con subtotales
-4. Calcular resumen con `CalculadoraVenta`
-5. Validar que `cambio >= 0` → `MontoInsuficienteException`
-6. Descontar stock de cada producto → `StockInsuficienteException` si no hay suficiente
-7. Persistir productos actualizados con `saveAll`
-8. Crear y persistir la `Venta` con estado `COMPLETADA`
-9. Retornar la venta creada
+**Logic of `confirmar`:**
+1. Validate that `items` is not empty → `CarritoVacioException`
+2. Resolve each product by id → `ProductoNotFoundException` if any is missing
+3. Build `List<ItemVenta>` with subtotals
+4. Calculate summary with `CalculadoraVenta`
+5. Validate that `cambio >= 0` → `MontoInsuficienteException`
+6. Deduct stock from each product → `StockInsuficienteException` if insufficient
+7. Persist updated products with `saveAll`
+8. Create and persist the `Venta` with state `COMPLETADA`
+9. Return the created sale
 
-**Criterios de aceptación:**
-- [ ] `confirmar` con `items=[]` lanza `CarritoVacioException` (SPEC-BE-003)
-- [ ] `confirmar` con `productoId` inexistente lanza `ProductoNotFoundException` (SPEC-BE-003)
-- [ ] `confirmar` con `montoPagado < total` lanza `MontoInsuficienteException` (SPEC-BE-003)
-- [ ] `confirmar` con `cantidad > stock` lanza `StockInsuficienteException` (SPEC-BE-003)
-- [ ] Si lanza cualquier excepción antes del `saveAll`, `ventaRepository.save()` **no es llamado** — verificable con Mockito (SPEC-BE-003)
-- [ ] Confirmación exitosa retorna `Venta` con `estado=COMPLETADA` y resumen completo (SPEC-BE-003)
-- [ ] `obtener(ventaId)` lanza `VentaNotFoundException` si no existe (SPEC-BE-004)
-- [ ] La clase no tiene anotaciones de Spring
+**Acceptance criteria:**
+- [ ] `confirmar` with `items=[]` throws `CarritoVacioException` (SPEC-BE-003)
+- [ ] `confirmar` with non-existent `productoId` throws `ProductoNotFoundException` (SPEC-BE-003)
+- [ ] `confirmar` with `montoPagado < total` throws `MontoInsuficienteException` (SPEC-BE-003)
+- [ ] `confirmar` with `cantidad > stock` throws `StockInsuficienteException` (SPEC-BE-003)
+- [ ] If any exception is thrown before `saveAll`, `ventaRepository.save()` is **not called** — verifiable with Mockito (SPEC-BE-003)
+- [ ] Successful confirmation returns `Venta` with `estado=COMPLETADA` and complete summary (SPEC-BE-003)
+- [ ] `obtener(ventaId)` throws `VentaNotFoundException` if not found (SPEC-BE-004)
+- [ ] The class has no Spring annotations
 
-**Dependencias previas:** T-BE-05, T-BE-06
-**Estimación:** 3h
-
----
-
-### T-BE-08 — Adaptador de salida: ProductoJpaAdapter
-
-**Descripción:** Implementar `ProductoRepository` usando Spring Data JPA. Esta clase vive en infraestructura y traduce entre el modelo de dominio y las entidades JPA.
-
-**Entregables:**
-- `ProductoEntity.java` con anotaciones `@Entity`, `@Table`, `@Column`
-- `ProductoJpaRepository.java` extendiendo `JpaRepository<ProductoEntity, Long>` con método `findByNombreContainingIgnoreCase`
-- `ProductoEntityMapper.java` con métodos `toDomain(ProductoEntity)` y `toEntity(Producto)`
-- `ProductoJpaAdapter.java` con `@Repository`, implementando `ProductoRepository` del dominio
-
-**Criterios de aceptación:**
-- [ ] `ProductoEntity` no aparece en ningún paquete del dominio
-- [ ] `buscarPorNombre("mou")` retorna productos cuyo nombre contiene "mou" (case-insensitive)
-- [ ] El mapper convierte correctamente `Dinero` ↔ `long` usando `Dinero.toPesos()` y `Dinero.dePesos()`
-- [ ] `ProductoJpaAdapter` implementa todos los métodos de `ProductoRepository` (incluyendo `saveAll`)
-
-**Dependencias previas:** T-BE-04
-**Estimación:** 2h
+**Prerequisites:** T-BE-05, T-BE-06
+**Estimate:** 3h
 
 ---
 
-### T-BE-09 — Adaptador de salida: VentaJpaAdapter
+### T-BE-08 — Outbound Adapter: ProductoJpaAdapter
 
-**Descripción:** Implementar `VentaRepository` usando JPA. Incluye la relación `@OneToMany` entre `VentaEntity` e `ItemVentaEntity`.
+**Description:** Implement `ProductoRepository` using Spring Data JPA. This class lives in infrastructure and translates between the domain model and JPA entities.
 
-**Entregables:**
-- `VentaEntity.java` con relación `@OneToMany(cascade = CascadeType.ALL)` a `ItemVentaEntity`
+**Deliverables:**
+- `ProductoEntity.java` with `@Entity`, `@Table`, `@Column` annotations
+- `ProductoJpaRepository.java` extending `JpaRepository<ProductoEntity, Long>` with method `findByNombreContainingIgnoreCase`
+- `ProductoEntityMapper.java` with methods `toDomain(ProductoEntity)` and `toEntity(Producto)`
+- `ProductoJpaAdapter.java` with `@Repository`, implementing the domain `ProductoRepository`
+
+**Acceptance criteria:**
+- [ ] `ProductoEntity` does not appear in any domain package
+- [ ] `buscarPorNombre("mou")` returns products whose name contains "mou" (case-insensitive)
+- [ ] The mapper correctly converts `Dinero` ↔ `long` using `Dinero.toPesos()` and `Dinero.dePesos()`
+- [ ] `ProductoJpaAdapter` implements all methods of `ProductoRepository` (including `saveAll`)
+
+**Prerequisites:** T-BE-04
+**Estimate:** 2h
+
+---
+
+### T-BE-09 — Outbound Adapter: VentaJpaAdapter
+
+**Description:** Implement `VentaRepository` using JPA. Includes the `@OneToMany` relationship between `VentaEntity` and `ItemVentaEntity`.
+
+**Deliverables:**
+- `VentaEntity.java` with `@OneToMany(cascade = CascadeType.ALL)` relationship to `ItemVentaEntity`
 - `ItemVentaEntity.java`
 - `VentaJpaRepository.java`
 - `VentaEntityMapper.java`
-- `VentaJpaAdapter.java` con `@Repository`, implementando `VentaRepository`
+- `VentaJpaAdapter.java` with `@Repository`, implementing `VentaRepository`
 
-**Criterios de aceptación:**
-- [ ] `save(venta)` persiste la venta con todos sus ítems en una sola operación
-- [ ] `findById(ventaId)` retorna `Optional.empty()` si el id no existe
-- [ ] El `ventaId` generado sigue el formato `VNT-YYYYMMDD-NNN` (SPEC-BE-003)
-- [ ] `VentaEntity` no aparece en ningún paquete del dominio
+**Acceptance criteria:**
+- [ ] `save(venta)` persists the sale with all its items in a single operation
+- [ ] `findById(ventaId)` returns `Optional.empty()` if the id does not exist
+- [ ] The generated `ventaId` follows the format `VNT-YYYYMMDD-NNN` (SPEC-BE-003)
+- [ ] `VentaEntity` does not appear in any domain package
 
-**Dependencias previas:** T-BE-04
-**Estimación:** 2h
+**Prerequisites:** T-BE-04
+**Estimate:** 2h
 
 ---
 
-### T-BE-10 — Adaptador de entrada: ProductoController
+### T-BE-10 — Inbound Adapter: ProductoController
 
 **Specs:** SPEC-BE-001, SPEC-BE-002
 
-**Descripción:** Implementar el controller REST para productos. Depende únicamente de las interfaces de Use Cases, nunca de los servicios concretos.
+**Description:** Implement the REST controller for products. Depends only on Use Case interfaces, never on concrete services.
 
-**Entregables:**
-- `ProductoController.java` con endpoints `GET /api/v1/productos?q=` y `GET /api/v1/productos/{id}`
-- `ProductoResponse.java` DTO de salida
-- `ProductoMapper.java` (web) que convierte `Producto` → `ProductoResponse`
-- `ApiResponse.java` wrapper genérico de respuesta exitosa
+**Deliverables:**
+- `ProductoController.java` with endpoints `GET /api/v1/productos?q=` and `GET /api/v1/productos/{id}`
+- `ProductoResponse.java` output DTO
+- `ProductoMapper.java` (web) that converts `Producto` → `ProductoResponse`
+- `ApiResponse.java` generic success response wrapper
 
-**Criterios de aceptación:**
-- [ ] `GET /api/v1/productos?q=mouse` retorna 200 con lista (SPEC-BE-001)
-- [ ] `GET /api/v1/productos?q=x` retorna 400 con `QUERY_DEMASIADO_CORTA` (SPEC-BE-001)
-- [ ] `GET /api/v1/productos?q=xyz_inexistente` retorna 200 con `data: []` (SPEC-BE-001)
-- [ ] `GET /api/v1/productos/1` retorna 200 con el producto (SPEC-BE-002)
-- [ ] `GET /api/v1/productos/99` retorna 404 con `PRODUCTO_NO_ENCONTRADO` (SPEC-BE-002)
-- [ ] La respuesta sigue exactamente el formato `{ "data": ..., "timestamp": ... }` (SPEC-BE-005)
-- [ ] El campo `stock` está presente en cada producto de la respuesta (requerido por SPEC-002 del frontend)
+**Acceptance criteria:**
+- [ ] `GET /api/v1/productos?q=mouse` returns 200 with list (SPEC-BE-001)
+- [ ] `GET /api/v1/productos?q=x` returns 400 with `QUERY_DEMASIADO_CORTA` (SPEC-BE-001)
+- [ ] `GET /api/v1/productos?q=xyz_nonexistent` returns 200 with `data: []` (SPEC-BE-001)
+- [ ] `GET /api/v1/productos/1` returns 200 with the product (SPEC-BE-002)
+- [ ] `GET /api/v1/productos/99` returns 404 with `PRODUCTO_NO_ENCONTRADO` (SPEC-BE-002)
+- [ ] The response follows exactly the format `{ "data": ..., "timestamp": ... }` (SPEC-BE-005)
+- [ ] The `stock` field is present in each product in the response (required by frontend SPEC-002)
 
-**Dependencias previas:** T-BE-06, T-BE-08, T-BE-12
-**Estimación:** 2h
+**Prerequisites:** T-BE-06, T-BE-08, T-BE-12
+**Estimate:** 2h
 
 ---
 
-### T-BE-11 — Adaptador de entrada: VentaController
+### T-BE-11 — Inbound Adapter: VentaController
 
 **Specs:** SPEC-BE-003, SPEC-BE-004
 
-**Descripción:** Implementar el controller REST para ventas con validación de request con Bean Validation. La anotación `@Transactional` vive aquí para garantizar atomicidad sin contaminar el dominio.
+**Description:** Implement the REST controller for sales with Bean Validation request validation. The `@Transactional` annotation lives here to guarantee atomicity without contaminating the domain.
 
-**Entregables:**
-- `VentaController.java` con endpoints `POST /api/v1/ventas` y `GET /api/v1/ventas/{ventaId}`
-- `ConfirmarVentaRequest.java` con `@NotEmpty` en `items`, `@Positive` en `montoPagado` y `@NotBlank` en `idempotencyKey`
-- `ItemVentaRequest.java` con `@NotNull` en `productoId` y `@Positive` en `cantidad`
-- `VentaResponse.java` DTO de salida completo con resumen
+**Deliverables:**
+- `VentaController.java` with endpoints `POST /api/v1/ventas` and `GET /api/v1/ventas/{ventaId}`
+- `ConfirmarVentaRequest.java` with `@NotEmpty` on `items`, `@Positive` on `montoPagado` and `@NotBlank` on `idempotencyKey`
+- `ItemVentaRequest.java` with `@NotNull` on `productoId` and `@Positive` on `cantidad`
+- `VentaResponse.java` complete output DTO with summary
 - `VentaMapper.java` (web)
 
-**Criterios de aceptación:**
-- [ ] `POST /api/v1/ventas` con body válido retorna 201 con `ventaId` y resumen completo (SPEC-BE-003)
-- [ ] `POST /api/v1/ventas` con `items: []` retorna 422 con `CARRITO_VACIO` (SPEC-BE-003)
-- [ ] `POST /api/v1/ventas` con `montoPagado < total` retorna 422 con `VENTA_MONTO_INSUFICIENTE` (SPEC-BE-003)
-- [ ] `POST /api/v1/ventas` con `productoId` inexistente retorna 404 con `PRODUCTO_NO_ENCONTRADO` (SPEC-BE-003)
-- [ ] `POST /api/v1/ventas` con `cantidad > stock` retorna 422 con `STOCK_INSUFICIENTE` (SPEC-BE-003)
-- [ ] `POST /api/v1/ventas` con `cantidad <= 0` retorna 400 con `CANTIDAD_INVALIDA` (SPEC-BE-003)
-- [ ] `GET /api/v1/ventas/{id}` retorna 200 con la venta completa (SPEC-BE-004)
-- [ ] `GET /api/v1/ventas/ID_FALSO` retorna 404 con `VENTA_NO_ENCONTRADA` (SPEC-BE-004)
-- [ ] El campo `cambio` en la respuesta de confirmación es el valor que el frontend muestra al cajero (SPEC-006 frontend)
-- [ ] Si `idempotencyKey` ya fue procesado, retorna 200 con la venta existente sin crear duplicado (SPEC-BE-003)
+**Acceptance criteria:**
+- [ ] `POST /api/v1/ventas` with valid body returns 201 with `ventaId` and complete summary (SPEC-BE-003)
+- [ ] `POST /api/v1/ventas` with `items: []` returns 422 with `CARRITO_VACIO` (SPEC-BE-003)
+- [ ] `POST /api/v1/ventas` with `montoPagado < total` returns 422 with `VENTA_MONTO_INSUFICIENTE` (SPEC-BE-003)
+- [ ] `POST /api/v1/ventas` with non-existent `productoId` returns 404 with `PRODUCTO_NO_ENCONTRADO` (SPEC-BE-003)
+- [ ] `POST /api/v1/ventas` with `cantidad > stock` returns 422 with `STOCK_INSUFICIENTE` (SPEC-BE-003)
+- [ ] `POST /api/v1/ventas` with `cantidad <= 0` returns 400 with `CANTIDAD_INVALIDA` (SPEC-BE-003)
+- [ ] `GET /api/v1/ventas/{id}` returns 200 with the complete sale (SPEC-BE-004)
+- [ ] `GET /api/v1/ventas/FAKE_ID` returns 404 with `VENTA_NO_ENCONTRADA` (SPEC-BE-004)
+- [ ] The `cambio` field in the confirmation response is the value the frontend shows the cashier (frontend SPEC-006)
+- [ ] If `idempotencyKey` was already processed, returns 200 with the existing sale without creating a duplicate (SPEC-BE-003)
 
-**Dependencias previas:** T-BE-07, T-BE-09, T-BE-12
-**Estimación:** 2h
+**Prerequisites:** T-BE-07, T-BE-09, T-BE-12
+**Estimate:** 2h
 
 ---
 
-### T-BE-12 — Manejador global de errores
+### T-BE-12 — Global Error Handler
 
 **Spec:** SPEC-BE-005
 
-**Descripción:** Implementar `GlobalExceptionHandler` con `@RestControllerAdvice`. Traduce excepciones de dominio a respuestas HTTP con el formato uniforme de error.
+**Description:** Implement `GlobalExceptionHandler` with `@RestControllerAdvice`. Translates domain exceptions to HTTP responses with the uniform error format.
 
-**Entregables:**
-- `GlobalExceptionHandler.java` con handlers para todas las excepciones de `domain/exception/`
-- `ErrorResponse.java` con campos `codigo`, `mensaje`, `timestamp`
-- Handler para `MethodArgumentNotValidException` (Bean Validation) → 400 con `VALIDACION_FALLIDA`
-- Handler genérico para `Exception` → 500 con `ERROR_INTERNO` sin stack trace
+**Deliverables:**
+- `GlobalExceptionHandler.java` with handlers for all exceptions in `domain/exception/`
+- `ErrorResponse.java` with fields `codigo`, `mensaje`, `timestamp`
+- Handler for `MethodArgumentNotValidException` (Bean Validation) → 400 with `VALIDACION_FALLIDA`
+- Generic handler for `Exception` → 500 with `ERROR_INTERNO` without stack trace
 
-**Criterios de aceptación:**
-- [ ] Cada excepción de dominio mapea a exactamente un HTTP status y código de error de §3.4 (SPEC-BE-005)
-- [ ] El handler de `Exception.class` retorna 500 con `ERROR_INTERNO` sin exponer detalles internos (SPEC-BE-005)
-- [ ] El `timestamp` de la respuesta de error es el momento real de la excepción (SPEC-BE-005)
-- [ ] El formato del body es siempre `{ "error": { "codigo", "mensaje", "timestamp" } }` (SPEC-BE-005)
-- [ ] Errores de Bean Validation retornan 400 con `VALIDACION_FALLIDA` y los nombres de campo inválidos
-- [ ] El handler cubre `QueryDemasiadoCortaException` → 400 con `QUERY_DEMASIADO_CORTA`
-- [ ] El handler cubre `VentaNotFoundException` → 404 con `VENTA_NO_ENCONTRADA`
+**Acceptance criteria:**
+- [ ] Each domain exception maps to exactly one HTTP status and error code from §3.4 (SPEC-BE-005)
+- [ ] The `Exception.class` handler returns 500 with `ERROR_INTERNO` without exposing internal details (SPEC-BE-005)
+- [ ] The `timestamp` of the error response is the actual moment of the exception (SPEC-BE-005)
+- [ ] The body format is always `{ "error": { "codigo", "mensaje", "timestamp" } }` (SPEC-BE-005)
+- [ ] Bean Validation errors return 400 with `VALIDACION_FALLIDA` and the invalid field names
+- [ ] The handler covers `QueryDemasiadoCortaException` → 400 with `QUERY_DEMASIADO_CORTA`
+- [ ] The handler covers `VentaNotFoundException` → 404 with `VENTA_NO_ENCONTRADA`
 
-**Dependencias previas:** T-BE-03
-**Estimación:** 1h
-
----
-
-### T-BE-13 — Tests unitarios de dominio
-
-**Specs verificadas:** SPEC-BE-001 al SPEC-BE-004
-
-**Descripción:** Tests unitarios puros de la capa de dominio. Sin Spring context, sin base de datos. Se usan Mocks (Mockito) para los repositorios.
-
-**Entregables:**
-- `DineroTest.java`: operaciones aritméticas (`mas`, `menos`, `por`), `iva()`, inmutabilidad
-- `CalculadoraVentaTest.java`: carrito vacío, un ítem, múltiples ítems, cambio exacto, cambio negativo — **incluye tests de propiedades con jqwik** (PBT)
-- `ProductoServiceTest.java`: búsqueda válida, query nula, query corta, producto no encontrado
-- `VentaServiceTest.java`: confirmación exitosa, carrito vacío, producto inexistente, stock insuficiente, monto insuficiente, atomicidad, idempotencia (clave existente retorna venta previa)
-
-**Criterios de aceptación:**
-- [ ] Ningún test levanta Spring context (`@SpringBootTest` prohibido en esta suite)
-- [ ] Los repositorios se mockean con Mockito — sin base de datos real
-- [ ] `VentaServiceTest` verifica que si lanza excepción antes del `saveAll`, `ventaRepository.save()` **no** es llamado (Mockito `verify(..., never())`)
-- [ ] Cobertura de `domain/service/` ≥ 90% medida con JaCoCo (`mvn verify`)
-- [ ] Los valores de los tests corresponden exactamente a los ejemplos numéricos de las specs
-- [ ] `CalculadoraVentaTest` incluye al menos 3 propiedades verificadas con jqwik: IVA correcto, total = subtotal + iva, cambio = montoPagado - total
-
-**Dependencias previas:** T-BE-05, T-BE-06, T-BE-07
-**Estimación:** 3h
+**Prerequisites:** T-BE-03
+**Estimate:** 1h
 
 ---
 
-### T-BE-14 — Tests de integración de controllers
+### T-BE-13 — Domain Unit Tests
 
-**Specs verificadas:** Todos los endpoints
+**Specs verified:** SPEC-BE-001 to SPEC-BE-004
 
-**Descripción:** Tests de integración con `@WebMvcTest` que verifican los contratos HTTP completos de cada spec.
+**Description:** Pure unit tests of the domain layer. No Spring context, no database. Mockito mocks are used for repositories.
 
-**Entregables:**
-- `ProductoControllerTest.java`: verifica los criterios de aceptación de SPEC-BE-001 y SPEC-BE-002
-- `VentaControllerTest.java`: verifica los criterios de aceptación de SPEC-BE-003 y SPEC-BE-004
+**Deliverables:**
+- `DineroTest.java`: arithmetic operations (`mas`, `menos`, `por`), `iva()`, immutability
+- `CalculadoraVentaTest.java`: empty cart, one item, multiple items, exact change, negative change — **includes property tests with jqwik** (PBT)
+- `ProductoServiceTest.java`: valid search, null query, short query, product not found
+- `VentaServiceTest.java`: successful confirmation, empty cart, non-existent product, insufficient stock, insufficient amount, atomicity, idempotency (existing key returns previous sale)
 
-**Estructura de cada test:**
+**Acceptance criteria:**
+- [ ] No test loads Spring context (`@SpringBootTest` forbidden in this suite)
+- [ ] Repositories are mocked with Mockito — no real database
+- [ ] `VentaServiceTest` verifies that if an exception is thrown before `saveAll`, `ventaRepository.save()` is **not** called (Mockito `verify(..., never())`)
+- [ ] Coverage of `domain/service/` ≥ 90% measured with JaCoCo (`mvn verify`)
+- [ ] Test values correspond exactly to the numerical examples in the specs
+- [ ] `CalculadoraVentaTest` includes at least 3 properties verified with jqwik: correct VAT, total = subtotal + iva, change = montoPagado - total
+
+**Prerequisites:** T-BE-05, T-BE-06, T-BE-07
+**Estimate:** 3h
+
+---
+
+### T-BE-14 — Controller Integration Tests
+
+**Specs verified:** All endpoints
+
+**Description:** Integration tests with `@WebMvcTest` that verify the complete HTTP contracts of each spec.
+
+**Deliverables:**
+- `ProductoControllerTest.java`: verifies the acceptance criteria of SPEC-BE-001 and SPEC-BE-002
+- `VentaControllerTest.java`: verifies the acceptance criteria of SPEC-BE-003 and SPEC-BE-004
+
+**Test structure:**
 
 ```java
 @WebMvcTest(ProductoController.class)
@@ -585,110 +585,116 @@ class ProductoControllerTest {
     @MockBean ObtenerProductoUseCase obtenerProducto;
 
     @Test
-    void buscar_conQueryValida_retorna200ConLista() { ... }
+    void buscar_withValidQuery_returns200WithList() { ... }
 
     @Test
-    void buscar_conQueryCorta_retorna400ConCodigoEsperado() { ... }
+    void buscar_withShortQuery_returns400WithExpectedCode() { ... }
 }
 ```
 
-**Criterios de aceptación:**
-- [ ] Cada criterio de aceptación de SPEC-BE-001 a SPEC-BE-004 tiene exactamente un test que lo verifica
-- [ ] Los tests verifican el HTTP status, el `codigo` de error y la estructura del body
-- [ ] Se usa `MockMvc` con `perform().andExpect()` — no `RestTemplate`
-- [ ] Los tests de error verifican el body `{ "error": { "codigo": "..." } }` (SPEC-BE-005)
-- [ ] `VentaControllerTest` incluye un test para `CANTIDAD_INVALIDA` (cantidad ≤ 0)
+**Acceptance criteria:**
+- [ ] Each acceptance criterion from SPEC-BE-001 to SPEC-BE-004 has exactly one test that verifies it
+- [ ] Tests verify the HTTP status, the error `codigo` and the body structure
+- [ ] `MockMvc` is used with `perform().andExpect()` — not `RestTemplate`
+- [ ] Error tests verify the body `{ "error": { "codigo": "..." } }` (SPEC-BE-005)
+- [ ] `VentaControllerTest` includes a test for `CANTIDAD_INVALIDA` (quantity ≤ 0)
 
-**Dependencias previas:** T-BE-10, T-BE-11, T-BE-12
-**Estimación:** 4h
-
----
-
-### T-BE-15 — Datos iniciales y configuración CORS
-
-**Descripción:** Poblar la base de datos H2 con productos de prueba y habilitar CORS para el frontend en `localhost:5173`.
-
-**Entregables:**
-- `src/main/resources/data.sql` con al menos 10 productos de ejemplo
-- `CorsConfig.java` en `infrastructure/config/` permitiendo origen `http://localhost:5173`
-- `application.properties` con H2 console habilitada para perfil dev
-
-**Criterios de aceptación:**
-- [ ] `GET /api/v1/productos?q=mo` retorna al menos 1 producto tras levantar la aplicación
-- [ ] Una petición desde `http://localhost:5173` no recibe error de CORS — alineado con el frontend en Vite (SPEC-001 frontend)
-- [ ] La H2 console es accesible en `/h2-console` en perfil dev
-
-**Dependencias previas:** T-BE-08, T-BE-09
-**Estimación:** 1h
+**Prerequisites:** T-BE-10, T-BE-11, T-BE-12
+**Estimate:** 4h
 
 ---
 
-### T-BE-16 — Historial de ventas paginado (SPEC-BE-006)
+### T-BE-15 — Initial Data and CORS Configuration
+
+**Description:** Populate the H2 database with test products and enable CORS for the frontend at `localhost:5173`.
+
+**Deliverables:**
+- `src/main/resources/data.sql` with at least 10 sample products
+- `CorsConfig.java` in `infrastructure/config/` allowing origin `http://localhost:5173`
+- `application.properties` with H2 console enabled for dev profile
+
+**Acceptance criteria:**
+- [ ] `GET /api/v1/productos?q=mo` returns at least 1 product after starting the application
+- [ ] A request from `http://localhost:5173` does not receive a CORS error — aligned with the frontend on Vite (frontend SPEC-001)
+- [ ] The H2 console is accessible at `/h2-console` in dev profile
+
+**Prerequisites:** T-BE-08, T-BE-09
+**Estimate:** 1h
+
+---
+
+### T-BE-16 — Paginated Sales History (SPEC-BE-006)
 
 **Spec:** SPEC-BE-006
 
-**Descripción:** Implementar el endpoint `GET /api/v1/ventas` con paginación para alimentar el componente `SalesHistory` del frontend (SPEC-008).
+**Description:** Implement the `GET /api/v1/ventas` endpoint with pagination to feed the `SalesHistory` component of the frontend (SPEC-008).
 
-**Entregables:**
-- `ListarVentasUseCase.java` en `domain/port/in/`
-- `ListarVentasService.java` (POJO) en `domain/service/`
-- `ResumenVentaSimple.java` Value Object en `domain/model/`
-- Método `findAll(int page, int size)` en `VentaRepository` y su implementación en `VentaJpaAdapter`
-- Endpoint `GET /api/v1/ventas` en `VentaController`
-- `VentaResumenResponse.java` DTO de salida
-- `BeanConfig` actualizado con el nuevo bean `ListarVentasService`
+**Deliverables:**
+- `ListarVentasUseCase.java` in `domain/port/in/`
+- `ListarVentasService.java` (POJO) in `domain/service/`
+- `ResumenVentaSimple.java` Value Object in `domain/model/`
+- Method `findAll(int page, int size)` in `VentaRepository` and its implementation in `VentaJpaAdapter`
+- Endpoint `GET /api/v1/ventas` in `VentaController`
+- `VentaResumenResponse.java` output DTO
+- `BeanConfig` updated with the new `ListarVentasService` bean
 
-**Criterios de aceptación:**
-- [ ] `GET /api/v1/ventas?page=0&size=20` retorna 200 con lista paginada ordenada por `fechaHora` descendente (SPEC-BE-006)
-- [ ] Cada ítem incluye `ventaId`, `fechaHora`, `total`, `cantidadItems` y `estado` (SPEC-BE-006)
-- [ ] Si no hay ventas, retorna 200 con `items: []` — el frontend muestra *"No hay ventas registradas en este turno"* (SPEC-008)
-- [ ] La respuesta incluye `total`, `page`, `size` y `totalPages` (SPEC-BE-006)
-- [ ] `ListarVentasService` es un POJO sin anotaciones de Spring
+**Acceptance criteria:**
+- [ ] `GET /api/v1/ventas?page=0&size=20` returns 200 with paginated list ordered by `fechaHora` descending (SPEC-BE-006)
+- [ ] Each item includes `ventaId`, `fechaHora`, `total`, `cantidadItems` and `estado` (SPEC-BE-006)
+- [ ] If there are no sales, returns 200 with `items: []` — the frontend shows *"No sales recorded in this shift"* (SPEC-008)
+- [ ] The response includes `total`, `page`, `size` and `totalPages` (SPEC-BE-006)
+- [ ] `ListarVentasService` is a POJO without Spring annotations
 
-**Dependencias previas:** T-BE-04, T-BE-09
-**Estimación:** 3h
+**Prerequisites:** T-BE-04, T-BE-09
+**Estimate:** 3h
 
 ---
 
-### T-BE-17 — Concurrencia de stock con Optimistic Locking (SPEC-BE-007)
+### T-BE-17 — Stock Concurrency with Optimistic Locking (SPEC-BE-007)
 
 **Spec:** SPEC-BE-007
 
-**Descripción:** Agregar `@Version` a `ProductoEntity` para detectar conflictos de concurrencia cuando dos ventas simultáneas intentan descontar el mismo stock.
+**Description:** Add `@Version` to `ProductoEntity` to detect concurrency conflicts when two simultaneous sales try to deduct the same stock.
 
-**Entregables:**
-- Campo `@Version Long version` en `ProductoEntity`
-- `ConflictoStockException.java` en `domain/exception/`
-- Lógica en `ProductoJpaAdapter.saveAll()` que captura `OptimisticLockException` de JPA y la convierte en `ConflictoStockException`
-- Handler en `GlobalExceptionHandler` para `ConflictoStockException` → 409 con `CONFLICTO_STOCK`
+**Deliverables:**
+- Field `@Version Long version` in `ProductoEntity`
+- `ConflictoStockException.java` in `domain/exception/`
+- Logic in `ProductoJpaAdapter.saveAll()` that catches JPA's `OptimisticLockException` and converts it to `ConflictoStockException`
+- Handler in `GlobalExceptionHandler` for `ConflictoStockException` → 409 with `CONFLICTO_STOCK`
 
-**Criterios de aceptación:**
-- [ ] `ProductoEntity` tiene `@Version Long version` — JPA lo incrementa en cada `save` (SPEC-BE-007)
-- [ ] Si `saveAll` lanza `OptimisticLockException`, el adaptador la convierte en `ConflictoStockException` (SPEC-BE-007)
-- [ ] `GlobalExceptionHandler` mapea `ConflictoStockException` → 409 con `CONFLICTO_STOCK` (SPEC-BE-007)
-- [ ] El stock no queda modificado si ocurre el conflicto — garantizado por `@Transactional` (SPEC-BE-007)
-- [ ] `ConflictoStockException` no tiene imports de Spring ni de JPA — es una excepción de dominio pura
+**Acceptance criteria:**
+- [ ] `ProductoEntity` has `@Version Long version` — JPA increments it on each `save` (SPEC-BE-007)
+- [ ] If `saveAll` throws `OptimisticLockException`, the adapter converts it to `ConflictoStockException` (SPEC-BE-007)
+- [ ] `GlobalExceptionHandler` maps `ConflictoStockException` → 409 with `CONFLICTO_STOCK` (SPEC-BE-007)
+- [ ] The stock is not modified if the conflict occurs — guaranteed by `@Transactional` (SPEC-BE-007)
+- [ ] `ConflictoStockException` has no Spring or JPA imports — it is a pure domain exception
 
-**Dependencias previas:** T-BE-08, T-BE-12
-**Estimación:** 2h
+**Prerequisites:** T-BE-08, T-BE-12
+**Estimate:** 2h
 
 ---
 
-### T-BE-18 — Búsqueda paginada de productos (SPEC-BE-001b)
+### T-BE-18 — Paginated Product Search (SPEC-BE-001b)
 
 **Spec:** SPEC-BE-001b
 
-**Descripción:** Extender el endpoint `GET /api/v1/productos` para soportar paginación opcional mediante parámetros `page` y `size`.
+**Description:** Extend the `GET /api/v1/productos` endpoint to support optional pagination via `page` and `size` parameters.
 
-**Entregables:**
-- Método `buscarPaginado(String query, int page, int size)` en `ProductoRepository` y su implementación en `ProductoJpaAdapter`
-- Actualización de `BuscarProductosUseCase` o nuevo use case `BuscarProductosPaginadoUseCase`
-- Actualización de `ProductoController` para aceptar `page` y `size` como parámetros opcionales
-- `PageResponse<ProductoResponse>` como tipo de retorno cuando se usan parámetros de paginación
+**Deliverables:**
+- Method `buscarPaginado(String query, int page, int size)` in `ProductoRepository` and its implementation in `ProductoJpaAdapter`
+- Update of `BuscarProductosUseCase` or new use case `BuscarProductosPaginadoUseCase`
+- Update of `ProductoController` to accept `page` and `size` as optional parameters
+- `PageResponse<ProductoResponse>` as return type when pagination parameters are used
 
-**Criterios de aceptación:**
-- [ ] `GET /api/v1/productos?q=mouse` (sin paginación) sigue funcionando igual que SPEC-BE-001 — compatibilidad hacia atrás
-- [ ] `GET /api/v1/productos?q=mouse&page=0&size=10` retorna 200 con `items`, `total`, `page`, `size`, `totalPages` (SPEC-BE-001b)
+**Acceptance criteria:**
+- [ ] `GET /api/v1/productos?q=mouse` (without pagination) continues working the same as SPEC-BE-001 — backward compatibility
+- [ ] `GET /api/v1/productos?q=mouse&page=0&size=10` returns 200 with `items`, `total`, `page`, `size`, `totalPages` (SPEC-BE-001b)
+- [ ] If `size > 100`, returns 400 with `VALIDACION_FALLIDA` (SPEC-BE-001b)
+- [ ] If `page >= totalPages`, returns 200 with `items: []` (SPEC-BE-001b)
+- [ ] T-BE-14 tests for SPEC-BE-001 continue passing without modification
+
+**Prerequisites:** T-BE-06, T-BE-08, T-BE-10
+**Estimate:** 2htorna 200 con `items`, `total`, `page`, `size`, `totalPages` (SPEC-BE-001b)
 - [ ] Si `size > 100`, retorna 400 con `VALIDACION_FALLIDA` (SPEC-BE-001b)
 - [ ] Si `page >= totalPages`, retorna 200 con `items: []` (SPEC-BE-001b)
 - [ ] Los tests de T-BE-14 para SPEC-BE-001 siguen pasando sin modificación
@@ -698,42 +704,42 @@ class ProductoControllerTest {
 
 ---
 
-## 5. Orden de ejecución actualizado
+## 5. Updated Execution Order
 
 ```
 T-BE-01 (Scaffolding)
 |
-+---> T-BE-02 (Modelos) ---> T-BE-03 (Excepciones) ---> T-BE-04 (Puertos)
++---> T-BE-02 (Models) ---> T-BE-03 (Exceptions) ---> T-BE-04 (Ports)
                                                               |
                               +-------------------------------+
                               |                               |
                          T-BE-05                        T-BE-08 ---> T-BE-10 ---> T-BE-18
-                         (Calculadora)                  (ProductoJpa)    |
+                         (Calculator)                   (ProductoJpa)    |
                               |                               |          |
                          T-BE-06                        T-BE-09 ---> T-BE-11
                          (ProductoService)              (VentaJpa)       |
                               |                                          |
-                         T-BE-07 <--- T-BE-13 (Tests unitarios)         |
+                         T-BE-07 <--- T-BE-13 (Unit tests)              |
                          (VentaService)                                  |
                                                     T-BE-12 (ErrorHandler)
                                                          |
-                                                    T-BE-14 (Tests integración)
+                                                    T-BE-14 (Integration tests)
 
-T-BE-15 (CORS + datos) -- paralelo con T-BE-08/09
-T-BE-16 (Historial) -- después de T-BE-04 y T-BE-09
-T-BE-17 (Optimistic Locking) -- después de T-BE-08 y T-BE-12
-T-BE-18 (Paginación búsqueda) -- después de T-BE-06, T-BE-08 y T-BE-10
-T-BE-19 (Auth JWT) -- después de T-BE-04 (puertos)
-T-BE-20 (Devoluciones) -- después de T-BE-07 y T-BE-09
-T-BE-21 (Inventario Admin) -- después de T-BE-06 y T-BE-08
-T-BE-22 (Reportes Admin) -- después de T-BE-09 y T-BE-19
+T-BE-15 (CORS + data) -- parallel with T-BE-08/09
+T-BE-16 (History) -- after T-BE-04 and T-BE-09
+T-BE-17 (Optimistic Locking) -- after T-BE-08 and T-BE-12
+T-BE-18 (Paginated search) -- after T-BE-06, T-BE-08 and T-BE-10
+T-BE-19 (Auth JWT) -- after T-BE-04 (ports)
+T-BE-20 (Returns) -- after T-BE-07 and T-BE-09
+T-BE-21 (Admin Inventory) -- after T-BE-06 and T-BE-08
+T-BE-22 (Admin Reports) -- after T-BE-09 and T-BE-19
 ```
 
 ---
 
-## 6. Matriz de trazabilidad completa (actualizada)
+## 6. Complete Traceability Matrix (updated)
 
-| Spec | Criterios totales | Tareas de implementación | Tareas de test |
+| Spec | Total criteria | Implementation tasks | Test tasks |
 |---|---|---|---|
 | SPEC-BE-001 | 6 | T-BE-06, T-BE-08, T-BE-10 | T-BE-13, T-BE-14 |
 | SPEC-BE-001b | 6 | T-BE-18 | T-BE-14 |
@@ -747,140 +753,140 @@ T-BE-22 (Reportes Admin) -- después de T-BE-09 y T-BE-19
 | SPEC-BE-009 | 5 | T-BE-20 | T-BE-13, T-BE-14 |
 | SPEC-BE-010 | 5 | T-BE-21 | T-BE-14 |
 | SPEC-BE-011 | 5 | T-BE-22 | T-BE-14 |
-| **Total** | **61** | **22 tareas** | **T-BE-13, T-BE-14** |
+| **Total** | **61** | **22 tasks** | **T-BE-13, T-BE-14** |
 
-> Una spec está **completa** cuando cada uno de sus criterios tiene un test que lo verifica y ese test pasa en CI.
+> A spec is **complete** when each of its criteria has a test that verifies it and that test passes in CI.
 
 ---
 
-## 7. Alineación con el frontend (actualizada)
+## 7. Frontend Alignment (updated)
 
-| Tarea backend | Tarea frontend dependiente | Contrato compartido |
+| Backend task | Dependent frontend task | Shared contract |
 |---|---|---|
-| T-BE-10 (ProductoController) | T-03 (SearchBar + useSearch) | `GET /api/v1/productos?q=` retorna `{ id, nombre, precio, stock }` |
-| T-BE-10 (ProductoController) | T-04 (ProductCard) | Campo `stock` activa/desactiva botón "Agregar" |
-| T-BE-11 (VentaController) | T-08 (confirmarVenta) | `POST /api/v1/ventas` retorna `cambio` que el frontend muestra al cajero |
-| T-BE-12 (GlobalExceptionHandler) | T-09 (ErrorBanner) | Códigos de error de §3.4 alimentan mensajes del `ErrorBanner` |
-| T-BE-15 (CORS) | T-03 (useSearch) | Sin CORS, el frontend en `localhost:5173` no puede llamar al backend |
-| T-BE-16 (ListarVentas) | T-12 (SalesHistory) | `GET /api/v1/ventas` alimenta `SalesHistory` (SPEC-008) |
-| T-BE-17 (OptimisticLocking) | T-08 (confirmarVenta) | Conflicto de stock → frontend recibe 409 y muestra mensaje de reintento |
-| T-BE-18 (PaginaciónBúsqueda) | T-03 (useSearch) | Catálogos grandes requieren paginación |
-| T-BE-19 (Auth JWT) | T-13 (LoginForm) | `POST /api/v1/auth/login` retorna token JWT y rol |
-| T-BE-20 (Devoluciones) | T-14 (RefundPanel) | `POST /api/v1/ventas/{id}/devolucion` procesa la devolución |
-| T-BE-21 (Inventario Admin) | T-15 (InventoryPanel) | `GET/POST/PUT /api/v1/admin/productos` gestiona el catálogo |
-| T-BE-22 (Reportes Admin) | T-16 (ReportsPanel) | `GET /api/v1/reportes/cierre` genera el reporte de caja |
+| T-BE-10 (ProductoController) | T-03 (SearchBar + useSearch) | `GET /api/v1/productos?q=` returns `{ id, nombre, precio, stock }` |
+| T-BE-10 (ProductoController) | T-04 (ProductCard) | `stock` field enables/disables "Add" button |
+| T-BE-11 (VentaController) | T-08 (confirmarVenta) | `POST /api/v1/ventas` returns `cambio` that the frontend shows the cashier |
+| T-BE-12 (GlobalExceptionHandler) | T-09 (ErrorBanner) | Error codes from §3.4 feed `ErrorBanner` messages |
+| T-BE-15 (CORS) | T-03 (useSearch) | Without CORS, the frontend at `localhost:5173` cannot call the backend |
+| T-BE-16 (ListarVentas) | T-12 (SalesHistory) | `GET /api/v1/ventas` feeds `SalesHistory` (SPEC-008) |
+| T-BE-17 (OptimisticLocking) | T-08 (confirmarVenta) | Stock conflict → frontend receives 409 and shows retry message |
+| T-BE-18 (PaginatedSearch) | T-03 (useSearch) | Large catalogs require pagination |
+| T-BE-19 (Auth JWT) | T-13 (LoginForm) | `POST /api/v1/auth/login` returns JWT token and role |
+| T-BE-20 (Returns) | T-14 (RefundPanel) | `POST /api/v1/ventas/{id}/devolucion` processes the return |
+| T-BE-21 (Admin Inventory) | T-15 (InventoryPanel) | `GET/POST/PUT /api/v1/admin/productos` manages the catalog |
+| T-BE-22 (Admin Reports) | T-16 (ReportsPanel) | `GET /api/v1/reportes/cierre` generates the end-of-day report |
 
 ---
 
-### T-BE-19 — Autenticación JWT (Login / Logout) — SPEC-BE-008
+### T-BE-19 — JWT Authentication (Login / Logout) — SPEC-BE-008
 
 **Spec:** SPEC-BE-008
 
-**Descripción:** Implementar el sistema de autenticación con JWT. El dominio valida credenciales y genera tokens; la infraestructura maneja la persistencia de la blacklist.
+**Description:** Implement the JWT authentication system. The domain validates credentials and generates tokens; infrastructure handles blacklist persistence.
 
-**Entregables:**
-- `Usuario.java`, `Rol.java`, `SesionToken.java` en `domain/model/`
-- `LoginUseCase.java`, `LogoutUseCase.java` en `domain/port/in/`
-- `UsuarioRepository.java`, `TokenRepository.java` en `domain/port/out/`
-- `AuthService.java` (POJO) en `domain/service/`
-- `UsuarioJpaAdapter.java`, `TokenJpaAdapter.java` en infraestructura
-- `UsuarioEntity.java`, `TokenBlacklistEntity.java` con `@Entity`
-- `AuthController.java` con `POST /api/v1/auth/login` y `POST /api/v1/auth/logout`
+**Deliverables:**
+- `Usuario.java`, `Rol.java`, `SesionToken.java` in `domain/model/`
+- `LoginUseCase.java`, `LogoutUseCase.java` in `domain/port/in/`
+- `UsuarioRepository.java`, `TokenRepository.java` in `domain/port/out/`
+- `AuthService.java` (POJO) in `domain/service/`
+- `UsuarioJpaAdapter.java`, `TokenJpaAdapter.java` in infrastructure
+- `UsuarioEntity.java`, `TokenBlacklistEntity.java` with `@Entity`
+- `AuthController.java` with `POST /api/v1/auth/login` and `POST /api/v1/auth/logout`
 - `LoginRequest.java`, `SesionTokenResponse.java` DTOs
-- Filtro JWT en Spring Security para validar el token en cada petición
-- `BeanConfig` actualizado con `AuthService`
+- JWT filter in Spring Security to validate the token on each request
+- `BeanConfig` updated with `AuthService`
 
-**Criterios de aceptación:**
-- [ ] `POST /api/v1/auth/login` con credenciales válidas retorna 200 con JWT, usuario, rol y `expiresIn` (SPEC-BE-008)
-- [ ] `POST /api/v1/auth/login` con credenciales inválidas retorna 401 con `CREDENCIALES_INVALIDAS` (SPEC-BE-008)
-- [ ] El JWT expira en 8 horas (SPEC-BE-008)
-- [ ] `POST /api/v1/auth/logout` invalida el token y retorna 204 (SPEC-BE-008)
-- [ ] Todos los endpoints excepto `/auth/login` retornan 401 con `TOKEN_INVALIDO` si el token es inválido o expirado (SPEC-BE-008)
-- [ ] `AuthService` es un POJO sin anotaciones de Spring
+**Acceptance criteria:**
+- [ ] `POST /api/v1/auth/login` with valid credentials returns 200 with JWT, username, role and `expiresIn` (SPEC-BE-008)
+- [ ] `POST /api/v1/auth/login` with invalid credentials returns 401 with `CREDENCIALES_INVALIDAS` (SPEC-BE-008)
+- [ ] The JWT expires in 8 hours (SPEC-BE-008)
+- [ ] `POST /api/v1/auth/logout` invalidates the token and returns 204 (SPEC-BE-008)
+- [ ] All endpoints except `/auth/login` return 401 with `TOKEN_INVALIDO` if the token is invalid or expired (SPEC-BE-008)
+- [ ] `AuthService` is a POJO without Spring annotations
 
-**Dependencias previas:** T-BE-04
-**Estimación:** 4h
+**Prerequisites:** T-BE-04
+**Estimate:** 4h
 
 ---
 
-### T-BE-20 — Devolución de ventas — SPEC-BE-009
+### T-BE-20 — Sale Returns — SPEC-BE-009
 
 **Spec:** SPEC-BE-009
 
-**Descripción:** Implementar el flujo de devolución de una venta completada, restaurando el stock y cambiando el estado de la venta.
+**Description:** Implement the return flow for a completed sale, restoring stock and changing the sale state.
 
-**Entregables:**
-- `Devolucion.java` en `domain/model/`
-- `DevolverVentaUseCase.java` en `domain/port/in/`
-- `DevolucionService.java` (POJO) en `domain/service/`
-- Endpoint `POST /api/v1/ventas/{ventaId}/devolucion` en `VentaController`
+**Deliverables:**
+- `Devolucion.java` in `domain/model/`
+- `DevolverVentaUseCase.java` in `domain/port/in/`
+- `DevolucionService.java` (POJO) in `domain/service/`
+- Endpoint `POST /api/v1/ventas/{ventaId}/devolucion` in `VentaController`
 - `DevolucionResponse.java` DTO
-- `EstadoVenta` actualizado con valor `DEVUELTA`
-- `BeanConfig` actualizado con `DevolucionService`
+- `EstadoVenta` updated with value `DEVUELTA`
+- `BeanConfig` updated with `DevolucionService`
 
-**Criterios de aceptación:**
-- [ ] `POST /api/v1/ventas/{id}/devolucion` retorna 200 con monto devuelto y estado `DEVUELTA` (SPEC-BE-009)
-- [ ] El stock de todos los productos de la venta se restaura (SPEC-BE-009)
-- [ ] Retorna 422 con `VENTA_YA_DEVUELTA` si la venta ya fue devuelta (SPEC-BE-009)
-- [ ] Retorna 422 con `VENTA_NO_DEVOLVIBLE` si la venta no está en estado `COMPLETADA` (SPEC-BE-009)
-- [ ] La operación es atómica: si falla la restauración de stock, la venta no cambia de estado (SPEC-BE-009)
-- [ ] `DevolucionService` es un POJO sin anotaciones de Spring
+**Acceptance criteria:**
+- [ ] `POST /api/v1/ventas/{id}/devolucion` returns 200 with returned amount and state `DEVUELTA` (SPEC-BE-009)
+- [ ] The stock of all products in the sale is restored (SPEC-BE-009)
+- [ ] Returns 422 with `VENTA_YA_DEVUELTA` if the sale was already returned (SPEC-BE-009)
+- [ ] Returns 422 with `VENTA_NO_DEVOLVIBLE` if the sale is not in state `COMPLETADA` (SPEC-BE-009)
+- [ ] The operation is atomic: if stock restoration fails, the sale does not change state (SPEC-BE-009)
+- [ ] `DevolucionService` is a POJO without Spring annotations
 
-**Dependencias previas:** T-BE-07, T-BE-09
-**Estimación:** 3h
+**Prerequisites:** T-BE-07, T-BE-09
+**Estimate:** 3h
 
 ---
 
-### T-BE-21 — Gestión de inventario (Admin) — SPEC-BE-010
+### T-BE-21 — Inventory Management (Admin) — SPEC-BE-010
 
 **Spec:** SPEC-BE-010
 
-**Descripción:** Implementar los endpoints de administración de productos, accesibles solo para el rol ADMIN.
+**Description:** Implement the product administration endpoints, accessible only for the ADMIN role.
 
-**Entregables:**
-- `GestionarProductoUseCase.java` en `domain/port/in/`
-- `InventarioService.java` (POJO) en `domain/service/`
-- `AdminProductoController.java` con `GET/POST /api/v1/admin/productos` y `PUT /api/v1/admin/productos/{id}` y `PATCH /api/v1/admin/productos/{id}/toggle`
+**Deliverables:**
+- `GestionarProductoUseCase.java` in `domain/port/in/`
+- `InventarioService.java` (POJO) in `domain/service/`
+- `AdminProductoController.java` with `GET/POST /api/v1/admin/productos`, `PUT /api/v1/admin/productos/{id}` and `PATCH /api/v1/admin/productos/{id}/toggle`
 - `NuevoProductoRequest.java`, `ActualizarProductoRequest.java` DTOs
-- Guard de rol en el controller: verifica `rol == ADMIN` antes de ejecutar
-- `BeanConfig` actualizado con `InventarioService`
+- Role guard in the controller: verifies `rol == ADMIN` before executing
+- `BeanConfig` updated with `InventarioService`
 
-**Criterios de aceptación:**
-- [ ] Retorna 403 con `ACCESO_DENEGADO` si el rol no es `ADMIN` (SPEC-BE-010)
-- [ ] `GET /api/v1/admin/productos` retorna todos los productos incluyendo inactivos (SPEC-BE-010)
-- [ ] `POST` retorna 409 con `PRODUCTO_DUPLICADO` si ya existe un producto activo con el mismo nombre (SPEC-BE-010)
-- [ ] `PATCH /toggle` alterna el campo `activo` — un producto inactivo no aparece en búsquedas de cajero (SPEC-BE-010)
-- [ ] `PUT` retorna 400 con `VALIDACION_FALLIDA` si el precio no es positivo (SPEC-BE-010)
-- [ ] `InventarioService` es un POJO sin anotaciones de Spring
+**Acceptance criteria:**
+- [ ] Returns 403 with `ACCESO_DENEGADO` if the role is not `ADMIN` (SPEC-BE-010)
+- [ ] `GET /api/v1/admin/productos` returns all products including inactive ones (SPEC-BE-010)
+- [ ] `POST` returns 409 with `PRODUCTO_DUPLICADO` if an active product with the same name already exists (SPEC-BE-010)
+- [ ] `PATCH /toggle` toggles the `activo` field — an inactive product does not appear in cashier searches (SPEC-BE-010)
+- [ ] `PUT` returns 400 with `VALIDACION_FALLIDA` if the price is not positive (SPEC-BE-010)
+- [ ] `InventarioService` is a POJO without Spring annotations
 
-**Dependencias previas:** T-BE-06, T-BE-08, T-BE-19
-**Estimación:** 4h
+**Prerequisites:** T-BE-06, T-BE-08, T-BE-19
+**Estimate:** 4h
 
 ---
 
-### T-BE-22 — Reportes de cierre de caja (Admin) — SPEC-BE-011
+### T-BE-22 — End-of-Day Reports (Admin) — SPEC-BE-011
 
 **Spec:** SPEC-BE-011
 
-**Descripción:** Implementar el endpoint de reportes de cierre de caja con soporte para exportación CSV, accesible solo para el rol ADMIN.
+**Description:** Implement the end-of-day report endpoint with CSV export support, accessible only for the ADMIN role.
 
-**Entregables:**
-- `ReporteCierre.java`, `VentasPorCajero.java` en `domain/model/`
-- `GenerarReporteUseCase.java` en `domain/port/in/`
-- `ReporteService.java` (POJO) en `domain/service/`
-- Método `generarReporte(fechaDesde, fechaHasta)` en `VentaRepository`
-- `ReporteController.java` con `GET /api/v1/reportes/cierre`
+**Deliverables:**
+- `ReporteCierre.java`, `VentasPorCajero.java` in `domain/model/`
+- `GenerarReporteUseCase.java` in `domain/port/in/`
+- `ReporteService.java` (POJO) in `domain/service/`
+- Method `generarReporte(fechaDesde, fechaHasta)` in `VentaRepository`
+- `ReporteController.java` with `GET /api/v1/reportes/cierre`
 - `ReporteCierreResponse.java` DTO
-- Soporte para `Accept: text/csv` en el mismo endpoint
-- `BeanConfig` actualizado con `ReporteService`
+- Support for `Accept: text/csv` on the same endpoint
+- `BeanConfig` updated with `ReporteService`
 
-**Criterios de aceptación:**
-- [ ] Retorna 403 con `ACCESO_DENEGADO` si el rol no es `ADMIN` (SPEC-BE-011)
+**Acceptance criteria:**
+- [ ] Returns 403 with `ACCESO_DENEGADO` if the role is not `ADMIN` (SPEC-BE-011)
 - [ ] `montoNeto = montoTotal - montoDevuelto` (SPEC-BE-011)
-- [ ] Si no hay ventas en el rango, retorna 200 con montos en 0 y arrays vacíos (SPEC-BE-011)
-- [ ] `fechaDesde` posterior a `fechaHasta` retorna 400 con `VALIDACION_FALLIDA` (SPEC-BE-011)
-- [ ] `Accept: text/csv` retorna el reporte en formato CSV descargable (SPEC-BE-011)
-- [ ] `ReporteService` es un POJO sin anotaciones de Spring
+- [ ] If there are no sales in the range, returns 200 with amounts at 0 and empty arrays (SPEC-BE-011)
+- [ ] `fechaDesde` later than `fechaHasta` returns 400 with `VALIDACION_FALLIDA` (SPEC-BE-011)
+- [ ] `Accept: text/csv` returns the report in downloadable CSV format (SPEC-BE-011)
+- [ ] `ReporteService` is a POJO without Spring annotations
 
-**Dependencias previas:** T-BE-09, T-BE-19
-**Estimación:** 3h
+**Prerequisites:** T-BE-09, T-BE-19
+**Estimate:** 3h

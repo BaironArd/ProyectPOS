@@ -1,105 +1,105 @@
-# Documento de Requisitos — Frontend POS
+# Requirements Document — Frontend POS
 
-## Introducción
+## Introduction
 
-El sistema **POS Frontend** es una aplicación web de punto de venta construida con React 18 + TypeScript 5. Permite a cajeros y administradores gestionar el ciclo completo de ventas: búsqueda de productos, construcción de carrito, cálculo de impuestos, procesamiento de pagos (efectivo, tarjeta, transferencia y mixto), confirmación de ventas, impresión de recibos, consulta de historial, devoluciones, gestión de inventario y reportes de cierre de caja.
+The **POS Frontend** system is a point-of-sale web application built with React 18 + TypeScript 5. It allows cashiers and administrators to manage the complete sales cycle: product search, cart building, tax calculation, payment processing (cash, card, transfer and mixed), sale confirmation, receipt printing, history lookup, returns, inventory management and end-of-day reports.
 
-La interfaz opera como una **máquina de estados finita** con 13 estados mutuamente excluyentes. La arquitectura sigue el patrón Hexagonal (Ports & Adapters): la capa de dominio define contratos (puertos), la capa de infraestructura los implementa (adaptadores), y la capa de aplicación orquesta el estado con Zustand.
-
----
-
-## Glosario
-
-- **Sistema**: La aplicación frontend POS en su conjunto.
-- **Cajero**: Usuario autenticado con rol `CAJERO`. Puede realizar ventas, consultar historial y procesar devoluciones.
-- **Admin**: Usuario autenticado con rol `ADMIN`. Tiene acceso a todas las funciones del Cajero más gestión de inventario y reportes.
-- **Store**: El estado centralizado de la aplicación gestionado con Zustand (`usePOSStore`).
-- **Calculadora**: Módulo de dominio puro (`calculadora.ts`) que implementa `calcularResumen`, `calcularCambio` y `calcularSubtotal`.
-- **Puerto**: Interfaz de dominio que define un contrato de acceso a datos o servicios externos (ej. `IProductoPort`, `IVentaPort`).
-- **Adaptador**: Implementación concreta de un Puerto en la capa de infraestructura.
-- **Carrito**: Colección de `ItemCarrito` en el Store que representa los productos seleccionados para la venta en curso.
-- **Resumen**: Objeto calculado con `subtotal`, `iva` y `total` derivado del Carrito.
-- **Sesion**: Objeto que contiene `usuario`, `rol` y `token` JWT almacenado en memoria.
-- **EstadoUI**: Tipo union que representa el estado activo de la máquina de estados: `LOGIN | IDLE | BUSCANDO | RESULTADOS | CARRITO_ACTIVO | CALCULANDO_PAGO | PROCESANDO | VENTA_COMPLETA | HISTORIAL | DEVOLUCION | INVENTARIO | REPORTES | ERROR`.
-- **MetodoPago**: Tipo union de métodos de pago aceptados: `EFECTIVO | TARJETA_DEBITO | TARJETA_CREDITO | TRANSFERENCIA | MIXTO`.
-- **IVA_RATE**: Constante de dominio con valor `0.19` (19%).
-- **SearchBar**: Componente de búsqueda de productos.
-- **ProductList**: Componente que renderiza la lista de productos encontrados.
-- **Cart**: Componente que muestra los ítems del Carrito activo.
-- **OrderSummary**: Componente de solo lectura que muestra Subtotal, IVA y Total.
-- **PaymentPanel**: Componente que gestiona el ingreso de monto y la selección de método de pago.
-- **ErrorBanner**: Componente transversal que muestra errores recuperables.
-- **LoginForm**: Componente de autenticación con campos usuario y contraseña.
-- **SalesHistory**: Componente que muestra el historial de ventas del turno.
-- **RefundPanel**: Componente que gestiona el flujo de devolución de una venta.
-- **InventoryPanel**: Componente de gestión de catálogo de productos (solo Admin).
-- **ReportsPanel**: Componente de reportes de cierre de caja (solo Admin).
-- **ReceiptButton**: Componente que dispara la impresión del recibo de venta.
+The interface operates as a **finite state machine** with 13 mutually exclusive states. The architecture follows the Hexagonal pattern (Ports & Adapters): the domain layer defines contracts (ports), the infrastructure layer implements them (adapters), and the application layer orchestrates state with Zustand.
 
 ---
 
-## Requisitos
+## Glossary
+
+- **System**: The POS frontend application as a whole.
+- **Cashier**: Authenticated user with role `CAJERO`. Can process sales, view history and process returns.
+- **Admin**: Authenticated user with role `ADMIN`. Has access to all Cashier functions plus inventory management and reports.
+- **Store**: The centralized application state managed with Zustand (`usePOSStore`).
+- **Calculator**: Pure domain module (`calculadora.ts`) that implements `calcularResumen`, `calcularCambio` and `calcularSubtotal`.
+- **Port**: Domain interface that defines a contract for accessing data or external services (e.g. `IProductoPort`, `IVentaPort`).
+- **Adapter**: Concrete implementation of a Port in the infrastructure layer.
+- **Cart**: Collection of `ItemCarrito` in the Store representing the products selected for the current sale.
+- **Summary**: Calculated object with `subtotal`, `iva` and `total` derived from the Cart.
+- **Session**: Object containing `usuario`, `rol` and JWT `token` stored in memory.
+- **UIState**: Union type representing the active state of the state machine: `LOGIN | IDLE | BUSCANDO | RESULTADOS | CARRITO_ACTIVO | CALCULANDO_PAGO | PROCESANDO | VENTA_COMPLETA | HISTORIAL | DEVOLUCION | INVENTARIO | REPORTES | ERROR`.
+- **PaymentMethod**: Union type of accepted payment methods: `EFECTIVO | TARJETA_DEBITO | TARJETA_CREDITO | TRANSFERENCIA | MIXTO`.
+- **IVA_RATE**: Domain constant with value `0.19` (19%).
+- **SearchBar**: Product search component.
+- **ProductList**: Component that renders the list of found products.
+- **Cart**: Component that shows the active Cart items.
+- **OrderSummary**: Read-only component that shows Subtotal, VAT and Total.
+- **PaymentPanel**: Component that manages amount entry and payment method selection.
+- **ErrorBanner**: Cross-cutting component that shows recoverable errors.
+- **LoginForm**: Authentication component with username and password fields.
+- **SalesHistory**: Component that shows the shift sales history.
+- **RefundPanel**: Component that manages the return flow for a sale.
+- **InventoryPanel**: Product catalog management component (Admin only).
+- **ReportsPanel**: End-of-day report component (Admin only).
+- **ReceiptButton**: Component that triggers sale receipt printing.
 
 ---
 
-### Requisito 1: Máquina de estados de UI
-
-**User Story:** Como desarrollador del sistema, quiero que la interfaz opere como una máquina de estados finita, para que las transiciones entre pantallas sean predecibles y verificables.
-
-#### Criterios de Aceptación
-
-1. THE Sistema SHALL mantener exactamente un EstadoUI activo en todo momento.
-2. WHEN el usuario no tiene Sesion activa, THE Sistema SHALL establecer el EstadoUI en `LOGIN`.
-3. WHEN el login es exitoso, THE Sistema SHALL transicionar el EstadoUI de `LOGIN` a `IDLE`.
-4. WHEN el usuario cierra sesión, THE Sistema SHALL transicionar el EstadoUI a `LOGIN` y limpiar la Sesion.
-5. WHEN ocurre un error recuperable en cualquier EstadoUI autenticado, THE Sistema SHALL transicionar el EstadoUI a `ERROR` preservando el contexto del error.
-6. IF el Store recibe una acción de transición inválida (ej. `IDLE` → `PROCESANDO`), THEN THE Store SHALL ignorar la acción y mantener el EstadoUI sin cambios.
-7. THE Sistema SHALL soportar las siguientes transiciones válidas: `LOGIN→IDLE`, `IDLE→BUSCANDO`, `BUSCANDO→RESULTADOS`, `RESULTADOS→CARRITO_ACTIVO`, `CARRITO_ACTIVO→CALCULANDO_PAGO`, `CALCULANDO_PAGO→PROCESANDO`, `PROCESANDO→VENTA_COMPLETA`, `VENTA_COMPLETA→IDLE`, `CARRITO_ACTIVO→RESULTADOS`, `IDLE→HISTORIAL`, `RESULTADOS→HISTORIAL`, `HISTORIAL→IDLE`, `HISTORIAL→RESULTADOS`, `VENTA_COMPLETA→DEVOLUCION`, `DEVOLUCION→IDLE`, `IDLE→INVENTARIO`, `INVENTARIO→IDLE`, `IDLE→REPORTES`, `REPORTES→IDLE`, `cualquier_estado_autenticado→ERROR`, `ERROR→IDLE`.
+## Requirements
 
 ---
 
-### Requisito 2: Búsqueda de productos (SPEC-001)
+### Requirement 1: UI State Machine
 
-**User Story:** Como Cajero, quiero buscar productos por nombre o código, para encontrar rápidamente los artículos que el cliente desea comprar.
+**User Story:** As a system developer, I want the interface to operate as a finite state machine, so that transitions between screens are predictable and verifiable.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. WHEN el Cajero escribe menos de 2 caracteres en el SearchBar, THE Sistema SHALL mantener el EstadoUI en `IDLE` sin invocar `IProductoPort.buscar`.
-2. WHEN el Cajero escribe 2 o más caracteres en el SearchBar, THE Sistema SHALL transicionar el EstadoUI a `BUSCANDO` e invocar `IProductoPort.buscar` con el texto ingresado.
-3. WHILE el EstadoUI es `BUSCANDO`, THE SearchBar SHALL mostrar un indicador de carga visible.
-4. WHEN `IProductoPort.buscar` retorna una lista de productos no vacía, THE Sistema SHALL transicionar el EstadoUI a `RESULTADOS` y renderizar los productos en el ProductList.
-5. WHEN `IProductoPort.buscar` retorna una lista vacía, THE Sistema SHALL transicionar el EstadoUI a `RESULTADOS` y mostrar el mensaje "Sin resultados para '[query]'" en el ProductList.
-6. IF `IProductoPort.buscar` falla con un error, THEN THE Sistema SHALL transicionar el EstadoUI a `ERROR` con código `LOAD_FAILED` y mensaje "No se pudieron cargar los productos. Intenta nuevamente."
-7. THE SearchBar SHALL renderizar cada producto con nombre, precio formateado y botón "Agregar".
-8. THE Sistema SHALL ejecutar la búsqueda sin recargar la página.
-
----
-
-### Requisito 3: Agregar producto al Carrito (SPEC-002)
-
-**User Story:** Como Cajero, quiero agregar productos al carrito con un clic, para construir la lista de artículos de la venta actual.
-
-#### Criterios de Aceptación
-
-1. WHEN el Cajero hace clic en "Agregar" sobre un producto con `stock > 0`, THE Store SHALL agregar el producto al Carrito con `cantidad: 1` si no existe, o incrementar `cantidad` en 1 si ya existe.
-2. WHEN el Cajero agrega el primer ítem al Carrito, THE Sistema SHALL transicionar el EstadoUI de `RESULTADOS` a `CARRITO_ACTIVO`.
-3. THE Cart SHALL mostrar cada ItemCarrito con columnas: Nombre, Precio unitario, Cantidad, Subtotal y acción Eliminar.
-4. THE Store SHALL calcular `subtotal = precioUnitario × cantidad` para cada ItemCarrito en cada modificación del Carrito.
-5. WHEN el stock de un producto es `0`, THE ProductList SHALL renderizar el botón "Agregar" de ese producto en estado desactivado.
-6. THE Sistema SHALL mostrar un CartBadge en el encabezado con el número de ítems únicos del Carrito.
+1. THE System SHALL maintain exactly one UIState active at all times.
+2. WHEN the user has no active Session, THE System SHALL set the UIState to `LOGIN`.
+3. WHEN login is successful, THE System SHALL transition the UIState from `LOGIN` to `IDLE`.
+4. WHEN the user logs out, THE System SHALL transition the UIState to `LOGIN` and clear the Session.
+5. WHEN a recoverable error occurs in any authenticated UIState, THE System SHALL transition the UIState to `ERROR` preserving the error context.
+6. IF the Store receives an invalid transition action (e.g. `IDLE` → `PROCESANDO`), THEN THE Store SHALL ignore the action and keep the UIState unchanged.
+7. THE System SHALL support the following valid transitions: `LOGIN→IDLE`, `IDLE→BUSCANDO`, `BUSCANDO→RESULTADOS`, `RESULTADOS→CARRITO_ACTIVO`, `CARRITO_ACTIVO→CALCULANDO_PAGO`, `CALCULANDO_PAGO→PROCESANDO`, `PROCESANDO→VENTA_COMPLETA`, `VENTA_COMPLETA→IDLE`, `CARRITO_ACTIVO→RESULTADOS`, `IDLE→HISTORIAL`, `RESULTADOS→HISTORIAL`, `HISTORIAL→IDLE`, `HISTORIAL→RESULTADOS`, `VENTA_COMPLETA→DEVOLUCION`, `DEVOLUCION→IDLE`, `IDLE→INVENTARIO`, `INVENTARIO→IDLE`, `IDLE→REPORTES`, `REPORTES→IDLE`, `any_authenticated_state→ERROR`, `ERROR→IDLE`.
 
 ---
 
-### Requisito 4: Modificar y eliminar ítems del Carrito (SPEC-003)
+### Requirement 2: Product Search (SPEC-001)
 
-**User Story:** Como Cajero, quiero modificar las cantidades de los productos en el carrito, para ajustar la venta antes de proceder al pago.
+**User Story:** As a Cashier, I want to search for products by name or code, to quickly find the items the customer wants to buy.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. WHEN el Cajero incrementa la cantidad de un ItemCarrito, THE Store SHALL recalcular el subtotal de ese ítem inmediatamente.
-2. WHEN el Cajero reduce la cantidad de un ItemCarrito a `0`, THE Store SHALL eliminar ese ítem del Carrito sin solicitar confirmación adicional.
-3. WHEN el Carrito queda vacío como resultado de reducir una cantidad a `0`, THE Sistema SHALL transicionar el EstadoUI de `CARRITO_ACTIVO` a `RESULTADOS` automáticamente.
-4. THE Cart SHALL rechazar entradas de cantidad negativas o no numéricas en los controles de modificación.
+1. WHEN the Cashier types fewer than 2 characters in the SearchBar, THE System SHALL keep the UIState in `IDLE` without invoking `IProductoPort.buscar`.
+2. WHEN the Cashier types 2 or more characters in the SearchBar, THE System SHALL transition the UIState to `BUSCANDO` and invoke `IProductoPort.buscar` with the entered text.
+3. WHILE the UIState is `BUSCANDO`, THE SearchBar SHALL show a visible loading indicator.
+4. WHEN `IProductoPort.buscar` returns a non-empty product list, THE System SHALL transition the UIState to `RESULTADOS` and render the products in the ProductList.
+5. WHEN `IProductoPort.buscar` returns an empty list, THE System SHALL transition the UIState to `RESULTADOS` and show the message "No results for '[query]'" in the ProductList.
+6. IF `IProductoPort.buscar` fails with an error, THEN THE System SHALL transition the UIState to `ERROR` with code `LOAD_FAILED` and message "Could not load products. Please try again."
+7. THE SearchBar SHALL render each product with name, formatted price and "Add" button.
+8. THE System SHALL execute the search without reloading the page.
+
+---
+
+### Requirement 3: Add Product to Cart (SPEC-002)
+
+**User Story:** As a Cashier, I want to add products to the cart with one click, to build the item list for the current sale.
+
+#### Acceptance Criteria
+
+1. WHEN the Cashier clicks "Add" on a product with `stock > 0`, THE Store SHALL add the product to the Cart with `cantidad: 1` if it does not exist, or increment `cantidad` by 1 if it already exists.
+2. WHEN the Cashier adds the first item to the Cart, THE System SHALL transition the UIState from `RESULTADOS` to `CARRITO_ACTIVO`.
+3. THE Cart SHALL show each CartItem with columns: Name, Unit price, Quantity, Subtotal and Remove action.
+4. THE Store SHALL calculate `subtotal = precioUnitario × cantidad` for each CartItem on every Cart modification.
+5. WHEN the stock of a product is `0`, THE ProductList SHALL render that product's "Add" button in disabled state.
+6. THE System SHALL show a CartBadge in the header with the number of unique items in the Cart.
+
+---
+
+### Requirement 4: Modify and Remove Cart Items (SPEC-003)
+
+**User Story:** As a Cashier, I want to modify the quantities of products in the cart, to adjust the sale before proceeding to payment.
+
+#### Acceptance Criteria
+
+1. WHEN the Cashier increments the quantity of a CartItem, THE Store SHALL recalculate that item's subtotal immediately.
+2. WHEN the Cashier reduces the quantity of a CartItem to `0`, THE Store SHALL remove that item from the Cart without requesting additional confirmation.
+3. WHEN the Cart becomes empty as a result of reducing a quantity to `0`, THE System SHALL transition the UIState from `CARRITO_ACTIVO` to `RESULTADOS` automatically.
+4. THE Cart SHALL reject negative or non-numeric quantity inputs in the modification controls.
 
 ---
 
@@ -114,213 +114,213 @@ La interfaz opera como una **máquina de estados finita** con 13 estados mutuame
 3. THE Calculadora SHALL calcular `total` como `subtotal + iva`.
 4. WHEN el Carrito cambia, THE OrderSummary SHALL recalcular y mostrar los tres valores en tiempo real.
 5. THE OrderSummary SHALL mostrar los montos con formato `$X.XXX` (prefijo `$`, separador de miles con punto).
-6. THE OrderSummary SHALL ser de solo lectura; el Cajero no puede editar ningún campo del resumen.
+6. THE OrderSummary SHALL be read-only; the Cashier cannot edit any field of the summary.
 
 ---
 
-### Requisito 6: Ingreso de monto de pago y cálculo de cambio (SPEC-005)
+### Requirement 6: Payment Amount Entry and Change Calculation (SPEC-005)
 
-**User Story:** Como Cajero, quiero ingresar el monto recibido del cliente y ver el cambio calculado en tiempo real, para agilizar el proceso de cobro.
+**User Story:** As a Cashier, I want to enter the amount received from the customer and see the change calculated in real time, to speed up the checkout process.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. WHEN el Cajero hace clic en "Proceder al pago", THE Sistema SHALL transicionar el EstadoUI de `CARRITO_ACTIVO` a `CALCULANDO_PAGO` y mostrar el PaymentPanel.
-2. WHEN el Cajero modifica el campo de monto en el PaymentPanel, THE Calculadora SHALL calcular `cambio = montoPagado − total` y mostrarlo en tiempo real.
-3. WHILE `montoPagado < total`, THE PaymentPanel SHALL mostrar el cambio en color rojo con la etiqueta "Monto insuficiente".
-4. WHILE `montoPagado >= total`, THE PaymentPanel SHALL mostrar el cambio en color verde.
-5. WHILE `montoPagado < total`, THE PaymentPanel SHALL mantener el botón "Confirmar venta" en estado desactivado.
-6. THE PaymentPanel SHALL rechazar valores no numéricos y valores negativos en el campo de monto.
-
----
-
-### Requisito 7: Confirmación de venta (SPEC-006)
-
-**User Story:** Como Cajero, quiero confirmar la venta con un clic, para registrar la transacción y obtener el comprobante de cambio.
-
-#### Criterios de Aceptación
-
-1. WHEN el Cajero hace clic en "Confirmar venta", THE Sistema SHALL transicionar el EstadoUI a `PROCESANDO` e invocar `IVentaPort.confirmar` con el Carrito y el total.
-2. WHILE el EstadoUI es `PROCESANDO`, THE PaymentPanel SHALL mostrar un indicador de carga y mantener el botón "Confirmar venta" desactivado para prevenir doble envío.
-3. WHEN `IVentaPort.confirmar` retorna éxito, THE Sistema SHALL transicionar el EstadoUI a `VENTA_COMPLETA` y mostrar el mensaje "¡Venta completada! Cambio: $X.XXX".
-4. WHEN el EstadoUI es `VENTA_COMPLETA`, THE Store SHALL limpiar el Carrito, el query, el montoPagado y el cambio a sus valores iniciales.
-5. WHEN han transcurrido 3 segundos en el EstadoUI `VENTA_COMPLETA` o el Cajero hace clic en "Nueva venta", THE Sistema SHALL transicionar el EstadoUI a `IDLE`.
-6. IF `IVentaPort.confirmar` falla, THEN THE Sistema SHALL transicionar el EstadoUI a `ERROR` con un mensaje descriptivo del fallo.
+1. WHEN the Cashier clicks "Proceed to payment", THE System SHALL transition the UIState from `CARRITO_ACTIVO` to `CALCULANDO_PAGO` and show the PaymentPanel.
+2. WHEN the Cashier modifies the amount field in the PaymentPanel, THE Calculator SHALL calculate `cambio = montoPagado − total` and show it in real time.
+3. WHILE `montoPagado < total`, THE PaymentPanel SHALL show the change in red with the label "Insufficient amount".
+4. WHILE `montoPagado >= total`, THE PaymentPanel SHALL show the change in green.
+5. WHILE `montoPagado < total`, THE PaymentPanel SHALL keep the "Confirm sale" button in disabled state.
+6. THE PaymentPanel SHALL reject non-numeric values and negative values in the amount field.
 
 ---
 
-### Requisito 8: Manejo de errores global (SPEC-007)
+### Requirement 7: Sale Confirmation (SPEC-006)
 
-**User Story:** Como Cajero, quiero que los errores del sistema se muestren de forma clara y recuperable, para poder reintentar la operación sin perder el contexto de la venta.
+**User Story:** As a Cashier, I want to confirm the sale with one click, to register the transaction and get the change receipt.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. WHEN el EstadoUI es `ERROR`, THE ErrorBanner SHALL ser visible en la parte superior de la pantalla.
-2. WHILE el EstadoUI es `ERROR`, THE Sistema SHALL mantener el resto de la interfaz visible y funcional.
-3. THE ErrorBanner SHALL mostrar un mensaje legible por el usuario sin exponer stack traces ni mensajes técnicos internos.
-4. THE ErrorBanner SHALL mostrar un mensaje diferenciado por cada código de error definido en el sistema.
-5. WHEN el Cajero hace clic en "Reintentar" en el ErrorBanner, THE Sistema SHALL re-ejecutar el último evento que causó el error.
-6. WHEN el Cajero cierra manualmente el ErrorBanner, THE Sistema SHALL limpiar el error y transicionar el EstadoUI al estado previo al error.
-
----
-
-### Requisito 9: Historial de ventas del turno (SPEC-008)
-
-**User Story:** Como Cajero, quiero consultar el historial de ventas de mi turno, para verificar transacciones anteriores sin interrumpir el flujo de ventas activo.
-
-#### Criterios de Aceptación
-
-1. WHEN el Cajero hace clic en "Ver historial" desde el EstadoUI `IDLE` o `RESULTADOS`, THE Sistema SHALL guardar el EstadoUI actual en `estadoPrevio` y transicionar a `HISTORIAL`.
-2. WHEN el EstadoUI transiciona a `HISTORIAL`, THE Sistema SHALL invocar `IVentaHistorialPort.listar` y mostrar los resultados en el SalesHistory.
-3. THE SalesHistory SHALL mostrar cada venta con: `ventaId`, fecha/hora formateada, total con formato `$X.XXX` y cantidad de ítems.
-4. WHEN `IVentaHistorialPort.listar` retorna una lista vacía, THE SalesHistory SHALL mostrar el mensaje "No hay ventas registradas en este turno".
-5. IF `IVentaHistorialPort.listar` falla, THEN THE Sistema SHALL transicionar el EstadoUI a `ERROR` con código `HISTORIAL_NO_DISPONIBLE`.
-6. WHEN el Cajero hace clic en "Volver" en el SalesHistory, THE Sistema SHALL restaurar el EstadoUI al valor guardado en `estadoPrevio` sin modificar el Carrito activo.
+1. WHEN the Cashier clicks "Confirm sale", THE System SHALL transition the UIState to `PROCESANDO` and invoke `IVentaPort.confirmar` with the Cart and the total.
+2. WHILE the UIState is `PROCESANDO`, THE PaymentPanel SHALL show a loading indicator and keep the "Confirm sale" button disabled to prevent double submission.
+3. WHEN `IVentaPort.confirmar` returns success, THE System SHALL transition the UIState to `VENTA_COMPLETA` and show the message "Sale completed! Change: $X.XXX".
+4. WHEN the UIState is `VENTA_COMPLETA`, THE Store SHALL clear the Cart, query, montoPagado and cambio to their initial values.
+5. WHEN 3 seconds have elapsed in the `VENTA_COMPLETA` UIState or the Cashier clicks "New sale", THE System SHALL transition the UIState to `IDLE`.
+6. IF `IVentaPort.confirmar` fails, THEN THE System SHALL transition the UIState to `ERROR` with a descriptive failure message.
 
 ---
 
-### Requisito 10: Autenticación de usuario (SPEC-009)
+### Requirement 8: Global Error Handling (SPEC-007)
 
-**User Story:** Como usuario del sistema, quiero autenticarme con usuario y contraseña, para acceder a las funciones correspondientes a mi rol.
+**User Story:** As a Cashier, I want system errors to be shown clearly and recoverably, so I can retry the operation without losing the sale context.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. WHILE el campo usuario o el campo contraseña del LoginForm están vacíos, THE LoginForm SHALL mantener el botón "Ingresar" desactivado.
-2. WHEN el usuario hace clic en "Ingresar" con credenciales incorrectas, THE LoginForm SHALL mostrar el mensaje "Usuario o contraseña incorrectos" sin indicar cuál campo es incorrecto.
-3. WHEN el login es exitoso con rol `CAJERO`, THE Sistema SHALL transicionar el EstadoUI a `IDLE` y mostrar la pantalla de ventas.
-4. WHEN el login es exitoso con rol `ADMIN`, THE Sistema SHALL transicionar el EstadoUI a `IDLE` y mostrar la pantalla de ventas con acceso adicional a Inventario y Reportes.
-5. THE Sistema SHALL almacenar el token JWT de la Sesion en memoria de la aplicación; THE Sistema SHALL NOT almacenar el token en `localStorage` ni en `sessionStorage`.
-6. THE Sistema SHALL incluir el token JWT en el encabezado `Authorization: Bearer <token>` de cada petición HTTP autenticada.
-7. IF la Sesion expira durante el uso de la aplicación, THEN THE Sistema SHALL transicionar el EstadoUI a `LOGIN` automáticamente.
-
----
-
-### Requisito 11: Cierre de sesión (SPEC-010)
-
-**User Story:** Como usuario del sistema, quiero cerrar sesión de forma segura, para proteger el acceso al sistema al finalizar mi turno.
-
-#### Criterios de Aceptación
-
-1. WHEN el usuario hace clic en "Cerrar sesión", THE Sistema SHALL invocar `IAuthPort.logout`, eliminar el token JWT de memoria y transicionar el EstadoUI a `LOGIN`.
-2. WHEN el cierre de sesión se completa, THE Store SHALL resetear completamente el estado: Carrito, query, historial, montoPagado, cambio y Sesion a sus valores iniciales.
-3. WHEN el EstadoUI es `LOGIN` tras el cierre de sesión, THE Sistema SHALL prevenir la navegación de vuelta al POS mediante el botón "Atrás" del navegador.
+1. WHEN the UIState is `ERROR`, THE ErrorBanner SHALL be visible at the top of the screen.
+2. WHILE the UIState is `ERROR`, THE System SHALL keep the rest of the interface visible and functional.
+3. THE ErrorBanner SHALL show a user-readable message without exposing stack traces or internal technical messages.
+4. THE ErrorBanner SHALL show a differentiated message for each error code defined in the system.
+5. WHEN the Cashier clicks "Retry" in the ErrorBanner, THE System SHALL re-execute the last event that caused the error.
+6. WHEN the Cashier manually closes the ErrorBanner, THE System SHALL clear the error and transition the UIState to the state prior to the error.
 
 ---
 
-### Requisito 12: Devolución de venta (SPEC-011)
+### Requirement 9: Shift Sales History (SPEC-008)
 
-**User Story:** Como Cajero, quiero procesar la devolución de una venta completada, para reembolsar al cliente y restaurar el stock de los productos.
+**User Story:** As a Cashier, I want to view the sales history of my shift, to verify previous transactions without interrupting the active sales flow.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. WHEN el Cajero hace clic en "Devolver venta" desde el EstadoUI `VENTA_COMPLETA` o desde el SalesHistory, THE Sistema SHALL transicionar el EstadoUI a `DEVOLUCION` y mostrar el RefundPanel con el resumen completo de la venta.
-2. THE RefundPanel SHALL mostrar el monto a devolver formateado con el formato `$X.XXX` antes de que el Cajero confirme.
-3. WHEN el Cajero confirma la devolución, THE Sistema SHALL invocar `IDevolucionPort.procesar` con el `ventaId` correspondiente.
-4. WHEN `IDevolucionPort.procesar` retorna éxito, THE Sistema SHALL transicionar el EstadoUI a `IDLE` y mostrar el mensaje "Devolución procesada. Devolver $X.XXX al cliente."
-5. THE Sistema SHALL permitir la devolución únicamente de ventas con estado `COMPLETADA`; una venta con estado `DEVUELTA` no puede ser devuelta nuevamente.
-6. WHEN la devolución es procesada exitosamente, THE Sistema SHALL reflejar la restauración del stock de los productos devueltos.
-7. IF `IDevolucionPort.procesar` falla, THEN THE Sistema SHALL transicionar el EstadoUI a `ERROR` con un mensaje descriptivo del fallo.
-
----
-
-### Requisito 13: Gestión de inventario (SPEC-012)
-
-**User Story:** Como Admin, quiero gestionar el catálogo de productos, para mantener actualizado el inventario disponible para los cajeros.
-
-#### Criterios de Aceptación
-
-1. WHEN un usuario con rol `ADMIN` hace clic en "Inventario", THE Sistema SHALL transicionar el EstadoUI a `INVENTARIO` y mostrar el InventoryPanel.
-2. IF un usuario con rol `CAJERO` intenta transicionar el EstadoUI a `INVENTARIO`, THEN THE Sistema SHALL rechazar la transición y emitir el error `ACCESO_DENEGADO`.
-3. THE InventoryPanel SHALL mostrar todos los productos con: nombre, precio, stock actual y estado activo/inactivo.
-4. WHEN el Admin crea un producto con un nombre que ya existe en el catálogo, THE Sistema SHALL retornar el error `PRODUCTO_DUPLICADO` sin crear el producto.
-5. WHILE el campo de precio del formulario de producto contiene un valor no positivo o no numérico, THE InventoryPanel SHALL mantener el botón "Guardar" desactivado.
-6. WHEN el Admin desactiva un producto, THE Sistema SHALL ocultar ese producto de los resultados de `IProductoPort.buscar` para los cajeros.
-7. WHEN el Admin actualiza el stock de un producto, THE InventoryPanel SHALL reflejar el nuevo valor en tiempo real.
+1. WHEN the Cashier clicks "View history" from UIState `IDLE` or `RESULTADOS`, THE System SHALL save the current UIState in `estadoPrevio` and transition to `HISTORIAL`.
+2. WHEN the UIState transitions to `HISTORIAL`, THE System SHALL invoke `IVentaHistorialPort.listar` and show the results in the SalesHistory.
+3. THE SalesHistory SHALL show each sale with: `ventaId`, formatted date/time, total with format `$X.XXX` and item count.
+4. WHEN `IVentaHistorialPort.listar` returns an empty list, THE SalesHistory SHALL show the message "No sales recorded in this shift".
+5. IF `IVentaHistorialPort.listar` fails, THEN THE System SHALL transition the UIState to `ERROR` with code `HISTORIAL_NO_DISPONIBLE`.
+6. WHEN the Cashier clicks "Back" in the SalesHistory, THE System SHALL restore the UIState to the value saved in `estadoPrevio` without modifying the active Cart.
 
 ---
 
-### Requisito 14: Reportes de cierre de caja (SPEC-013)
+### Requirement 10: User Authentication (SPEC-009)
 
-**User Story:** Como Admin, quiero generar reportes de cierre de caja por rango de fechas, para auditar las ventas y exportar los datos para contabilidad.
+**User Story:** As a system user, I want to authenticate with username and password, to access the functions corresponding to my role.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. WHEN un usuario con rol `ADMIN` hace clic en "Reportes", THE Sistema SHALL transicionar el EstadoUI a `REPORTES` y mostrar el ReportsPanel.
-2. IF un usuario con rol `CAJERO` intenta transicionar el EstadoUI a `REPORTES`, THEN THE Sistema SHALL rechazar la transición y emitir el error `ACCESO_DENEGADO`.
-3. WHEN el Admin selecciona un rango de fechas y hace clic en "Generar", THE Sistema SHALL invocar `IReportePort.generarCierre` y mostrar el resultado en el ReportsPanel.
-4. THE ReportsPanel SHALL mostrar: total de ventas, total de devoluciones, monto bruto, monto devuelto, monto neto y tabla de ventas por cajero.
-5. THE ReportsPanel SHALL mostrar todos los montos con formato `$X.XXX`.
-6. WHEN el Admin hace clic en "Exportar CSV", THE Sistema SHALL invocar `IReportePort.exportarCSV` y descargar un archivo con los datos del reporte activo.
-7. WHEN `IReportePort.generarCierre` retorna un reporte sin ventas, THE ReportsPanel SHALL mostrar el mensaje "Sin ventas en el período seleccionado".
-
----
-
-### Requisito 15: Múltiples métodos de pago (SPEC-014)
-
-**User Story:** Como Cajero, quiero seleccionar el método de pago del cliente (efectivo, tarjeta, transferencia o mixto), para registrar correctamente la forma en que se realizó la transacción.
-
-#### Criterios de Aceptación
-
-1. WHEN el EstadoUI es `CALCULANDO_PAGO`, THE PaymentPanel SHALL mostrar un selector de MetodoPago con las opciones: `EFECTIVO`, `TARJETA_DEBITO`, `TARJETA_CREDITO`, `TRANSFERENCIA` y `MIXTO`.
-2. WHEN el Cajero selecciona `EFECTIVO`, THE PaymentPanel SHALL mantener el comportamiento de cálculo de cambio en tiempo real definido en el Requisito 6.
-3. WHEN el Cajero selecciona `TARJETA_DEBITO`, `TARJETA_CREDITO` o `TRANSFERENCIA`, THE PaymentPanel SHALL habilitar el botón "Confirmar venta" únicamente cuando el monto ingresado es igual al total.
-4. WHEN el Cajero selecciona `MIXTO`, THE PaymentPanel SHALL permitir agregar múltiples filas de pago, cada una con MetodoPago y monto; THE PaymentPanel SHALL habilitar "Confirmar venta" únicamente cuando la suma de todos los montos es mayor o igual al total.
-5. WHEN el MetodoPago activo no incluye componente de efectivo, THE PaymentPanel SHALL ocultar la línea de cambio.
-6. THE Store SHALL incluir el MetodoPago y la lista de pagos (`PagoItem[]`) en la llamada a `IVentaPort.confirmar`.
+1. WHILE the username or password field of the LoginForm is empty, THE LoginForm SHALL keep the "Log in" button disabled.
+2. WHEN the user clicks "Log in" with incorrect credentials, THE LoginForm SHALL show the message "Invalid username or password" without indicating which field is incorrect.
+3. WHEN login is successful with role `CAJERO`, THE System SHALL transition the UIState to `IDLE` and show the sales screen.
+4. WHEN login is successful with role `ADMIN`, THE System SHALL transition the UIState to `IDLE` and show the sales screen with additional access to Inventory and Reports.
+5. THE System SHALL store the Session JWT token in application memory; THE System SHALL NOT store the token in `localStorage` or `sessionStorage`.
+6. THE System SHALL include the JWT token in the `Authorization: Bearer <token>` header of each authenticated HTTP request.
+7. IF the Session expires during application use, THEN THE System SHALL transition the UIState to `LOGIN` automatically.
 
 ---
 
-### Requisito 16: Impresión de recibo (SPEC-015)
+### Requirement 11: Logout (SPEC-010)
 
-**User Story:** Como Cajero, quiero imprimir el recibo de la venta, para entregar al cliente un comprobante físico de la transacción.
+**User Story:** As a system user, I want to log out securely, to protect system access at the end of my shift.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. WHEN el EstadoUI es `VENTA_COMPLETA`, THE Sistema SHALL mostrar el ReceiptButton disponible para el Cajero.
-2. WHEN el Cajero hace clic en el ReceiptButton, THE Sistema SHALL invocar `IImpresionPort.imprimir` con el `ventaId` de la venta completada.
-3. THE ImpresionAdapter SHALL generar el recibo usando `window.print()` con estilos `@media print` que ocultan el resto de la interfaz durante la impresión.
-4. THE Sistema SHALL generar el recibo con el siguiente contenido: nombre del negocio, fecha y hora de la venta, nombre del Cajero, `ventaId`, lista de ítems con nombre, cantidad y subtotal, subtotal total, IVA, total, MetodoPago y cambio.
-5. WHEN el MetodoPago de la venta no incluye componente de efectivo, THE Sistema SHALL omitir la línea de cambio del recibo.
-6. THE Sistema SHALL aplicar estilos CSS de impresión que garanticen la legibilidad del recibo en papel de 80mm de ancho.
+1. WHEN the user clicks "Log out", THE System SHALL invoke `IAuthPort.logout`, remove the JWT token from memory and transition the UIState to `LOGIN`.
+2. WHEN logout completes, THE Store SHALL completely reset the state: Cart, query, history, montoPagado, cambio and Session to their initial values.
+3. WHEN the UIState is `LOGIN` after logout, THE System SHALL prevent navigation back to the POS using the browser's "Back" button.
 
 ---
 
-### Requisito 17: Arquitectura hexagonal y puertos de dominio
+### Requirement 12: Sale Return (SPEC-011)
 
-**User Story:** Como desarrollador del sistema, quiero que la lógica de dominio esté desacoplada de la infraestructura, para poder testear el comportamiento en aislamiento y sustituir adaptadores sin modificar el dominio.
+**User Story:** As a Cashier, I want to process the return of a completed sale, to refund the customer and restore the product stock.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. THE Sistema SHALL definir los siguientes puertos en la capa de dominio: `IProductoPort`, `IVentaPort`, `IVentaHistorialPort`, `IAuthPort`, `IDevolucionPort`, `IInventarioPort`, `IReportePort` e `IImpresionPort`.
-2. THE Sistema SHALL proveer adaptadores mock para cada Puerto, utilizables en tests sin necesidad de un backend activo.
-3. THE Sistema SHALL proveer adaptadores de producción para cada Puerto que se comuniquen con la API REST en `VITE_API_BASE_URL`.
-4. THE Calculadora SHALL ser una función pura sin efectos secundarios; THE Calculadora SHALL producir el mismo resultado para los mismos argumentos de entrada en cualquier contexto de ejecución.
-5. WHERE el entorno de ejecución es de pruebas, THE Sistema SHALL inyectar los adaptadores mock en lugar de los adaptadores de producción.
-
----
-
-### Requisito 18: Propiedades de corrección de la Calculadora (Property-Based Testing)
-
-**User Story:** Como desarrollador del sistema, quiero verificar las propiedades matemáticas de la Calculadora con cientos de entradas generadas aleatoriamente, para garantizar que las fórmulas de IVA y cambio son correctas para cualquier valor válido.
-
-#### Criterios de Aceptación
-
-1. FOR ALL valores de `subtotal >= 0`, THE Calculadora SHALL producir `iva = Math.round(subtotal × 0.19)`.
-2. FOR ALL valores de `subtotal >= 0`, THE Calculadora SHALL producir `total = subtotal + Math.round(subtotal × 0.19)`.
-3. FOR ALL valores de `montoPagado` y `total`, THE Calculadora SHALL producir `cambio = montoPagado − total`.
-4. WHEN el Carrito está vacío, THE Calculadora SHALL producir `{ subtotal: 0, iva: 0, total: 0 }`.
-5. FOR ALL valores de `precio >= 0` y `cantidad >= 0`, THE Calculadora SHALL producir `calcularSubtotal(precio, cantidad) = precio × cantidad`.
-6. THE Sistema SHALL verificar las propiedades anteriores ejecutando al menos 100 casos de prueba generados aleatoriamente por propiedad usando `fast-check`.
-7. WHEN una propiedad falla, THE Sistema SHALL reportar el contraejemplo mínimo que la rompe.
+1. WHEN the Cashier clicks "Return sale" from UIState `VENTA_COMPLETA` or from the SalesHistory, THE System SHALL transition the UIState to `DEVOLUCION` and show the RefundPanel with the complete sale summary.
+2. THE RefundPanel SHALL show the amount to return formatted with format `$X.XXX` before the Cashier confirms.
+3. WHEN the Cashier confirms the return, THE System SHALL invoke `IDevolucionPort.procesar` with the corresponding `ventaId`.
+4. WHEN `IDevolucionPort.procesar` returns success, THE System SHALL transition the UIState to `IDLE` and show the message "Return processed. Return $X.XXX to the customer."
+5. THE System SHALL allow returns only for sales with state `COMPLETADA`; a sale with state `DEVUELTA` cannot be returned again.
+6. WHEN the return is successfully processed, THE System SHALL reflect the stock restoration of the returned products.
+7. IF `IDevolucionPort.procesar` fails, THEN THE System SHALL transition the UIState to `ERROR` with a descriptive failure message.
 
 ---
 
-### Requisito 19: Propiedades de corrección de la máquina de estados (Property-Based Testing)
+### Requirement 13: Inventory Management (SPEC-012)
 
-**User Story:** Como desarrollador del sistema, quiero verificar que la máquina de estados del Store rechaza transiciones inválidas para cualquier combinación de estado y acción, para garantizar la integridad del flujo de UI.
+**User Story:** As an Admin, I want to manage the product catalog, to keep the inventory available to cashiers up to date.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. FOR ALL EstadoUI válidos y acciones de transición inválidas para ese estado, THE Store SHALL mantener el EstadoUI sin cambios.
-2. FOR ALL secuencias válidas de acciones que llevan al Carrito a estar vacío desde `CARRITO_ACTIVO`, THE Store SHALL transicionar el EstadoUI a `RESULTADOS`.
-3. FOR ALL secuencias válidas de confirmación de venta, THE Store SHALL producir un estado `VENTA_COMPLETA` con Carrito vacío, query vacío y montoPagado igual a `0`.
-4. THE Sistema SHALL verificar las propiedades anteriores ejecutando al menos 100 secuencias de acciones generadas aleatoriamente usando `fast-check`.
+1. WHEN a user with role `ADMIN` clicks "Inventory", THE System SHALL transition the UIState to `INVENTARIO` and show the InventoryPanel.
+2. IF a user with role `CAJERO` attempts to transition the UIState to `INVENTARIO`, THEN THE System SHALL reject the transition and emit the error `ACCESO_DENEGADO`.
+3. THE InventoryPanel SHALL show all products with: name, price, current stock and active/inactive status.
+4. WHEN the Admin creates a product with a name that already exists in the catalog, THE System SHALL return the error `PRODUCTO_DUPLICADO` without creating the product.
+5. WHILE the price field of the product form contains a non-positive or non-numeric value, THE InventoryPanel SHALL keep the "Save" button disabled.
+6. WHEN the Admin deactivates a product, THE System SHALL hide that product from `IProductoPort.buscar` results for cashiers.
+7. WHEN the Admin updates a product's stock, THE InventoryPanel SHALL reflect the new value in real time.
+
+---
+
+### Requirement 14: End-of-Day Reports (SPEC-013)
+
+**User Story:** As an Admin, I want to generate end-of-day reports by date range, to audit sales and export data for accounting.
+
+#### Acceptance Criteria
+
+1. WHEN a user with role `ADMIN` clicks "Reports", THE System SHALL transition the UIState to `REPORTES` and show the ReportsPanel.
+2. IF a user with role `CAJERO` attempts to transition the UIState to `REPORTES`, THEN THE System SHALL reject the transition and emit the error `ACCESO_DENEGADO`.
+3. WHEN the Admin selects a date range and clicks "Generate", THE System SHALL invoke `IReportePort.generarCierre` and show the result in the ReportsPanel.
+4. THE ReportsPanel SHALL show: total sales, total returns, gross amount, returned amount, net amount and sales-by-cashier table.
+5. THE ReportsPanel SHALL show all amounts with format `$X.XXX`.
+6. WHEN the Admin clicks "Export CSV", THE System SHALL invoke `IReportePort.exportarCSV` and download a file with the active report data.
+7. WHEN `IReportePort.generarCierre` returns a report with no sales, THE ReportsPanel SHALL show the message "No sales in the selected period".
+
+---
+
+### Requirement 15: Multiple Payment Methods (SPEC-014)
+
+**User Story:** As a Cashier, I want to select the customer's payment method (cash, card, transfer or mixed), to correctly record how the transaction was made.
+
+#### Acceptance Criteria
+
+1. WHEN the UIState is `CALCULANDO_PAGO`, THE PaymentPanel SHALL show a PaymentMethod selector with options: `EFECTIVO`, `TARJETA_DEBITO`, `TARJETA_CREDITO`, `TRANSFERENCIA` and `MIXTO`.
+2. WHEN the Cashier selects `EFECTIVO`, THE PaymentPanel SHALL maintain the real-time change calculation behavior defined in Requirement 6.
+3. WHEN the Cashier selects `TARJETA_DEBITO`, `TARJETA_CREDITO` or `TRANSFERENCIA`, THE PaymentPanel SHALL enable the "Confirm sale" button only when the entered amount equals the total.
+4. WHEN the Cashier selects `MIXTO`, THE PaymentPanel SHALL allow adding multiple payment rows, each with PaymentMethod and amount; THE PaymentPanel SHALL enable "Confirm sale" only when the sum of all amounts is greater than or equal to the total.
+5. WHEN the active PaymentMethod does not include a cash component, THE PaymentPanel SHALL hide the change line.
+6. THE Store SHALL include the PaymentMethod and the payments list (`PagoItem[]`) in the call to `IVentaPort.confirmar`.
+
+---
+
+### Requirement 16: Receipt Printing (SPEC-015)
+
+**User Story:** As a Cashier, I want to print the sale receipt, to give the customer a physical proof of the transaction.
+
+#### Acceptance Criteria
+
+1. WHEN the UIState is `VENTA_COMPLETA`, THE System SHALL show the ReceiptButton available to the Cashier.
+2. WHEN the Cashier clicks the ReceiptButton, THE System SHALL invoke `IImpresionPort.imprimir` with the `ventaId` of the completed sale.
+3. THE ImpresionAdapter SHALL generate the receipt using `window.print()` with `@media print` styles that hide the rest of the interface during printing.
+4. THE System SHALL generate the receipt with the following content: business name, sale date and time, Cashier name, `ventaId`, item list with name, quantity and subtotal, total subtotal, VAT, total, PaymentMethod and change.
+5. WHEN the sale's PaymentMethod does not include a cash component, THE System SHALL omit the change line from the receipt.
+6. THE System SHALL apply CSS print styles that guarantee receipt readability on 80mm wide paper.
+
+---
+
+### Requirement 17: Hexagonal Architecture and Domain Ports
+
+**User Story:** As a system developer, I want the domain logic to be decoupled from infrastructure, to be able to test behavior in isolation and substitute adapters without modifying the domain.
+
+#### Acceptance Criteria
+
+1. THE System SHALL define the following ports in the domain layer: `IProductoPort`, `IVentaPort`, `IVentaHistorialPort`, `IAuthPort`, `IDevolucionPort`, `IInventarioPort`, `IReportePort` and `IImpresionPort`.
+2. THE System SHALL provide mock adapters for each Port, usable in tests without a running backend.
+3. THE System SHALL provide production adapters for each Port that communicate with the REST API at `VITE_API_BASE_URL`.
+4. THE Calculator SHALL be a pure function without side effects; THE Calculator SHALL produce the same result for the same input arguments in any execution context.
+5. WHERE the execution environment is testing, THE System SHALL inject mock adapters instead of production adapters.
+
+---
+
+### Requirement 18: Calculator Correctness Properties (Property-Based Testing)
+
+**User Story:** As a system developer, I want to verify the mathematical properties of the Calculator with hundreds of randomly generated inputs, to guarantee that the VAT and change formulas are correct for any valid value.
+
+#### Acceptance Criteria
+
+1. FOR ALL values of `subtotal >= 0`, THE Calculator SHALL produce `iva = Math.round(subtotal × 0.19)`.
+2. FOR ALL values of `subtotal >= 0`, THE Calculator SHALL produce `total = subtotal + Math.round(subtotal × 0.19)`.
+3. FOR ALL values of `montoPagado` and `total`, THE Calculator SHALL produce `cambio = montoPagado − total`.
+4. WHEN the Cart is empty, THE Calculator SHALL produce `{ subtotal: 0, iva: 0, total: 0 }`.
+5. FOR ALL values of `precio >= 0` and `cantidad >= 0`, THE Calculator SHALL produce `calcularSubtotal(precio, cantidad) = precio × cantidad`.
+6. THE System SHALL verify the above properties by running at least 100 randomly generated test cases per property using `fast-check`.
+7. WHEN a property fails, THE System SHALL report the minimal counterexample that breaks it.
+
+---
+
+### Requirement 19: State Machine Correctness Properties (Property-Based Testing)
+
+**User Story:** As a system developer, I want to verify that the Store state machine rejects invalid transitions for any combination of state and action, to guarantee the integrity of the UI flow.
+
+#### Acceptance Criteria
+
+1. FOR ALL valid UIStates and invalid transition actions for that state, THE Store SHALL keep the UIState unchanged.
+2. FOR ALL valid action sequences that lead the Cart to be empty from `CARRITO_ACTIVO`, THE Store SHALL transition the UIState to `RESULTADOS`.
+3. FOR ALL valid sale confirmation sequences, THE Store SHALL produce a `VENTA_COMPLETA` state with empty Cart, empty query and montoPagado equal to `0`.
+4. THE System SHALL verify the above properties by running at least 100 randomly generated action sequences using `fast-check`.

@@ -1,36 +1,36 @@
 
-# Diseño del Sistema — Backend POS
-**Versión:** 1.3
-**Referencia:** especificaciones_backend.md v1.3
-**Tecnología:** Java 21 · Spring Boot 3 · Maven · JPA/Hibernate · H2 (dev) / PostgreSQL (prod)
-**Arquitectura:** Hexagonal (Ports & Adapters) con inversión de dependencias (DIP)
+# System Design — Backend POS
+**Version:** 1.3
+**Reference:** requirements.md v1.3
+**Technology:** Java 21 · Spring Boot 3 · Maven · JPA/Hibernate · H2 (dev) / PostgreSQL (prod)
+**Architecture:** Hexagonal (Ports & Adapters) with Dependency Inversion Principle (DIP)
 
 ---
 
-## 1. Principio de diseño
+## 1. Design Principle
 
-Cada decisión estructural se justifica por una spec. La arquitectura hexagonal garantiza que el **dominio no depende de nada externo**: ni de Spring, ni de JPA, ni de HTTP. Las capas externas dependen del dominio; nunca al revés.
+Every structural decision is justified by a spec. The hexagonal architecture guarantees that the **domain does not depend on anything external**: not Spring, not JPA, not HTTP. The outer layers depend on the domain; never the other way around.
 
-> Regla de oro: si cambias la base de datos de H2 a PostgreSQL, o el framework de Spring a Quarkus, el dominio no se toca.
+> Golden rule: if you switch the database from H2 to PostgreSQL, or the framework from Spring to Quarkus, the domain is untouched.
 
-> **Corolario crítico:** las clases del paquete `domain/` no pueden tener anotaciones de Spring (`@Service`, `@Component`, `@Autowired`) ni de JPA (`@Entity`, `@Column`). El cableado entre interfaces y sus implementaciones se hace exclusivamente en `BeanConfig.java` (capa de infraestructura).
+> **Critical corollary:** classes in the `domain/` package cannot have Spring annotations (`@Service`, `@Component`, `@Autowired`) or JPA annotations (`@Entity`, `@Column`). The wiring between interfaces and their implementations is done exclusively in `BeanConfig.java` (infrastructure layer).
 
 ---
 
-## 2. Arquitectura Hexagonal — Vista general
+## 2. Hexagonal Architecture — Overview
 
 ```
 +------------------------------------------------------------------+
-|                    ADAPTADORES DE ENTRADA                        |
-|              (Driving Side - quien llama al dominio)             |
+|                      INBOUND ADAPTERS                            |
+|              (Driving Side - who calls the domain)               |
 |                                                                  |
 |   ProductoController   VentaController   GlobalExceptionHandler  |
 |         (HTTP / REST - Spring MVC)                               |
 +---------------------------+--------------------------------------+
-                            | usa puerto de entrada
+                            | uses inbound port
 +---------------------------v--------------------------------------+
-|                    PUERTOS DE ENTRADA                            |
-|              (Interfaces definidas por el dominio)               |
+|                      INBOUND PORTS                               |
+|              (Interfaces defined by the domain)                  |
 |                                                                  |
 |   BuscarProductosUseCase    ConfirmarVentaUseCase               |
 |   ObtenerProductoUseCase    ObtenerVentaUseCase                 |
@@ -38,10 +38,10 @@ Cada decisión estructural se justifica por una spec. La arquitectura hexagonal 
 |   DevolverVentaUseCase      GestionarProductoUseCase            |
 |   GenerarReporteUseCase                                         |
 +---------------------------+--------------------------------------+
-                            | implementado por
+                            | implemented by
 +---------------------------v--------------------------------------+
-|                    DOMINIO (NUCLEO)                              |
-|         No depende de Spring, JPA, ni ningun framework          |
+|                      DOMAIN (CORE)                               |
+|         Does not depend on Spring, JPA, or any framework        |
 |                                                                  |
 |   Entities:   Producto · Venta · ItemVenta · Usuario           |
 |   Services:   ProductoService · VentaService · AuthService     |
@@ -52,46 +52,46 @@ Cada decisión estructural se justifica por una spec. La arquitectura hexagonal 
 |               CredencialesInvalidasException · AccesoDenegado..|
 |               VentaYaDevueltaException · ProductoDuplicado...  |
 +---------------------------+--------------------------------------+
-                            | usa puerto de salida
+                            | uses outbound port
 +---------------------------v--------------------------------------+
-|                    PUERTOS DE SALIDA                             |
-|         (Interfaces definidas por el dominio)                   |
+|                      OUTBOUND PORTS                              |
+|         (Interfaces defined by the domain)                      |
 |                                                                  |
 |   ProductoRepository   VentaRepository                          |
 +---------------------------+--------------------------------------+
-                            | implementado por
+                            | implemented by
 +---------------------------v--------------------------------------+
-|                    ADAPTADORES DE SALIDA                         |
-|              (Driven Side - llamado por el dominio)              |
+|                      OUTBOUND ADAPTERS                           |
+|              (Driven Side - called by the domain)                |
 |                                                                  |
 |   ProductoJpaAdapter   VentaJpaAdapter                          |
-|         (Spring Data JPA - infraestructura)                      |
+|         (Spring Data JPA - infrastructure)                       |
 +------------------------------------------------------------------+
 ```
 
-**Regla de dependencias:**
-`Controller -> UseCase (interfaz) <- Service (POJO) -> Repository (interfaz) <- JpaAdapter`
+**Dependency rule:**
+`Controller -> UseCase (interface) <- Service (POJO) -> Repository (interface) <- JpaAdapter`
 
-Las flechas apuntan siempre **hacia el dominio**. El dominio no tiene ninguna flecha saliente.
+Arrows always point **toward the domain**. The domain has no outgoing arrows.
 
 ---
 
-## 3. Principios SOLID aplicados
+## 3. SOLID Principles Applied
 
-| Principio | Aplicación concreta en este proyecto |
+| Principle | Concrete application in this project |
 |---|---|
-| **S** — Single Responsibility | `ProductoService` solo gestiona productos. `VentaService` solo gestiona ventas. `CalculadoraVenta` solo calcula totales. `AuthService` solo gestiona autenticación. `ReporteService` solo genera reportes. Cada clase tiene una razón para cambiar. |
-| **O** — Open/Closed | Agregar un nuevo método de pago (ej. tarjeta) no modifica `VentaService`. Se agrega un nuevo `PagoStrategy` sin tocar código existente. |
-| **L** — Liskov Substitution | `ProductoJpaAdapter` es sustituible por `ProductoInMemoryAdapter` en tests. Ambos implementan `ProductoRepository` sin cambiar el comportamiento esperado. |
-| **I** — Interface Segregation | `BuscarProductosUseCase` y `ObtenerProductoUseCase` son interfaces separadas. `LoginUseCase` y `LogoutUseCase` son interfaces separadas. Un controlador que solo busca no depende de métodos que no usa. |
-| **D** — Dependency Inversion | `VentaService` depende de `ProductoRepository` (interfaz de dominio), no de `ProductoJpaAdapter` (clase concreta de infraestructura). `BeanConfig` inyecta la implementación en runtime. |
+| **S** — Single Responsibility | `ProductoService` only manages products. `VentaService` only manages sales. `CalculadoraVenta` only calculates totals. `AuthService` only manages authentication. `ReporteService` only generates reports. Each class has one reason to change. |
+| **O** — Open/Closed | Adding a new payment method (e.g. card) does not modify `VentaService`. A new `PagoStrategy` is added without touching existing code. |
+| **L** — Liskov Substitution | `ProductoJpaAdapter` is substitutable by `ProductoInMemoryAdapter` in tests. Both implement `ProductoRepository` without changing the expected behavior. |
+| **I** — Interface Segregation | `BuscarProductosUseCase` and `ObtenerProductoUseCase` are separate interfaces. `LoginUseCase` and `LogoutUseCase` are separate interfaces. A controller that only searches does not depend on methods it does not use. |
+| **D** — Dependency Inversion | `VentaService` depends on `ProductoRepository` (domain interface), not on `ProductoJpaAdapter` (concrete infrastructure class). `BeanConfig` injects the implementation at runtime. |
 
 ---
 
-## 4. Diagrama de secuencia — Confirmar venta (SPEC-BE-003)
+## 4. Sequence Diagram — Confirm Sale (SPEC-BE-003)
 
 ```
-Cliente HTTP        VentaController       VentaService         ProductoRepository    VentaRepository
+HTTP Client         VentaController       VentaService         ProductoRepository    VentaRepository
      |                    |                    |                       |                    |
      |  POST /ventas       |                    |                       |                    |
      +-------------------->|                    |                       |                    |
@@ -100,9 +100,9 @@ Cliente HTTP        VentaController       VentaService         ProductoRepositor
      |                    |                    | findById(productoId)  |                    |
      |                    |                    +----------------------->|                    |
      |                    |                    |<-----------------------+                    |
-     |                    |                    |  [valida stock]        |                    |
-     |                    |                    |  [calcula totales]     |                    |
-     |                    |                    |  [valida montoPagado]  |                    |
+     |                    |                    |  [validate stock]      |                    |
+     |                    |                    |  [calculate totals]    |                    |
+     |                    |                    |  [validate amountPaid] |                    |
      |                    |                    | save(venta)            |                    |
      |                    |                    +------------------------------------------>|
      |                    |                    |<------------------------------------------+
@@ -116,10 +116,10 @@ Cliente HTTP        VentaController       VentaService         ProductoRepositor
 
 ---
 
-## 5. Diagrama de secuencia — Error de dominio (SPEC-BE-005)
+## 5. Sequence Diagram — Domain Error (SPEC-BE-005)
 
 ```
-Cliente HTTP       VentaController      VentaService      GlobalExceptionHandler
+HTTP Client        VentaController      VentaService      GlobalExceptionHandler
      |                   |                   |                      |
      |  POST /ventas      |                   |                      |
      +------------------>|                   |                      |
@@ -129,7 +129,7 @@ Cliente HTTP       VentaController      VentaService      GlobalExceptionHandler
      |                   |                   | StockInsuficiente    |
      |                   |                   | Exception            |
      |                   |                   +--------------------->|
-     |                   |                   |                      | mapea a
+     |                   |                   |                      | maps to
      |                   |                   |                      | ErrorResponse
      |  422 + ErrorBody   |                   |                      |
      |<------------------+-------------------+----------------------+
@@ -137,11 +137,11 @@ Cliente HTTP       VentaController      VentaService      GlobalExceptionHandler
 
 ---
 
-## 6. Modelo de dominio
+## 6. Domain Model
 
-### Entidades
+### Entities
 
-Las entidades del dominio son POJOs puros. **Ninguna clase de este paquete tiene anotaciones de Spring ni de JPA.**
+Domain entities are pure POJOs. **No class in this package has Spring or JPA annotations.**
 
 ```java
 // domain/model/Producto.java
@@ -172,8 +172,8 @@ public class Venta {
     private EstadoVenta estado;
     private Instant fechaHora;
     private String idempotencyKey;
-    private String usuarioCajero;    // SPEC-BE-011: para reporte por cajero
-    private List<PagoItem> pagos;    // SPEC-BE-003 + SPEC-014 frontend: métodos de pago
+    private String usuarioCajero;    // SPEC-BE-011: for report by cashier
+    private List<PagoItem> pagos;    // SPEC-BE-003 + SPEC-014 frontend: payment methods
 }
 
 // domain/model/Usuario.java  — SPEC-BE-008
@@ -212,7 +212,7 @@ public record ReporteCierre(
 
 public record VentasPorCajero(String usuario, int ventas, Dinero monto) {}
 
-// domain/model/PagoItem.java  — SPEC-BE-003 (métodos de pago)
+// domain/model/PagoItem.java  — SPEC-BE-003 (payment methods)
 public record PagoItem(MetodoPago metodo, Dinero monto, String referencia) {}
 
 // domain/model/MetodoPago.java
@@ -242,8 +242,8 @@ public record Dinero(long centavos) {
     public Dinero iva()                   { return new Dinero(Math.round(this.centavos * IVA_RATE)); }
     public boolean esMenorQue(Dinero otro){ return this.centavos < otro.centavos; }
 
-    /** Convierte a pesos enteros para serializar en la API (centavos / 100 si se usa esa escala,
-     *  o directamente si centavos ya representa pesos enteros como en este proyecto). */
+    /** Converts to whole pesos for API serialization (centavos / 100 if that scale is used,
+     *  or directly if centavos already represents whole pesos as in this project). */
     public long toPesos() { return this.centavos; }
 
     public static Dinero dePesos(long pesos) { return new Dinero(pesos); }
@@ -258,7 +258,7 @@ public record ResumenVenta(
     Dinero cambio
 ) {}
 
-// domain/model/PageResponse.java  — Value Object para respuestas paginadas (SPEC-BE-001b, SPEC-BE-006)
+// domain/model/PageResponse.java  — Value Object for paginated responses (SPEC-BE-001b, SPEC-BE-006)
 public record PageResponse<T>(
     List<T> items,
     long total,
@@ -273,9 +273,9 @@ public record PageResponse<T>(
 }
 ```
 
-> **Nota:** `Dinero` usa `long centavos` como campo interno. En este proyecto los precios se almacenan en pesos enteros (sin fracciones de centavo), por lo que `centavos` equivale a pesos. El método `toPesos()` serializa el valor para la API. Si en el futuro se requieren centavos reales, solo cambia la escala sin afectar el dominio.
+> **Note:** `Dinero` uses `long centavos` as its internal field. In this project prices are stored as whole pesos (no fractional cents), so `centavos` is equivalent to pesos. The `toPesos()` method serializes the value for the API. If fractional cents are needed in the future, only the scale changes without affecting the domain.
 
-### Excepciones de dominio
+### Domain Exceptions
 
 ```java
 // domain/exception/StockInsuficienteException.java
@@ -298,7 +298,7 @@ public class QueryDemasiadoCortaException extends RuntimeException { ... }
 
 // domain/exception/ConflictoStockException.java
 public class ConflictoStockException extends RuntimeException { ... }
-// Lanzada cuando JPA detecta OptimisticLockException — el GlobalExceptionHandler la mapea a 409 CONFLICTO_STOCK
+// Thrown when JPA detects OptimisticLockException — GlobalExceptionHandler maps it to 409 CONFLICTO_STOCK
 
 // domain/exception/CredencialesInvalidasException.java
 public class CredencialesInvalidasException extends RuntimeException { ... }
@@ -319,13 +319,13 @@ public class VentaNoDevolvibleException extends RuntimeException { ... }
 public class ProductoDuplicadoException extends RuntimeException { ... }
 ```
 
-Todas extienden `RuntimeException` (unchecked). No tienen imports de Spring ni de HTTP.
+All extend `RuntimeException` (unchecked). They have no Spring or HTTP imports.
 
 ---
 
-## 7. Puertos (interfaces de dominio)
+## 7. Ports (Domain Interfaces)
 
-### Puertos de entrada (Use Cases)
+### Inbound Ports (Use Cases)
 
 ```java
 // domain/port/in/BuscarProductosUseCase.java
@@ -382,20 +382,20 @@ public interface GenerarReporteUseCase {
 }
 ```
 
-### Comandos (entrada tipada al dominio)
+### Commands (Typed Domain Input)
 
 ```java
 // domain/port/in/ConfirmarVentaCommand.java
 public record ConfirmarVentaCommand(
     List<ItemCommand> items,
     long montoPagado,
-    String idempotencyKey   // SPEC-BE-003: UUID generado por el frontend
+    String idempotencyKey   // SPEC-BE-003: UUID generated by the frontend
 ) {
     public record ItemCommand(Long productoId, int cantidad) {}
 }
 ```
 
-### Puertos de salida (Repositorios)
+### Outbound Ports (Repositories)
 
 ```java
 // domain/port/out/ProductoRepository.java
@@ -420,7 +420,7 @@ public interface UsuarioRepository {
     Optional<Usuario> findByUsuario(String usuario);
 }
 
-// domain/port/out/TokenRepository.java  — SPEC-BE-008 (blacklist de tokens)
+// domain/port/out/TokenRepository.java  — SPEC-BE-008 (token blacklist)
 public interface TokenRepository {
     void invalidar(String token);
     boolean esValido(String token);
@@ -429,18 +429,18 @@ public interface TokenRepository {
 
 ---
 
-## 8. Servicios de dominio (POJOs puros — sin anotaciones de Spring)
+## 8. Domain Services (Pure POJOs — no Spring annotations)
 
-Los servicios de dominio son POJOs. Spring los instancia a través de `BeanConfig.java` en la capa de infraestructura. Esto garantiza que el dominio no depende del framework.
+Domain services are POJOs. Spring instantiates them through `BeanConfig.java` in the infrastructure layer. This guarantees the domain does not depend on the framework.
 
 ```java
 // domain/service/ProductoService.java
 public class ProductoService implements BuscarProductosUseCase, ObtenerProductoUseCase {
 
-    private final ProductoRepository productoRepository; // puerto, no JPA
+    private final ProductoRepository productoRepository; // port, not JPA
 
     public ProductoService(ProductoRepository productoRepository) {
-        this.productoRepository = productoRepository;  // DIP: inyectado por constructor
+        this.productoRepository = productoRepository;  // DIP: injected by constructor
     }
 
     @Override
@@ -465,7 +465,7 @@ public class VentaService implements ConfirmarVentaUseCase, ObtenerVentaUseCase 
     private final VentaRepository ventaRepository;
     private final CalculadoraVenta calculadora;
 
-    // DIP: todos inyectados por constructor, todos son interfaces o POJOs de dominio
+    // DIP: all injected by constructor, all are domain interfaces or POJOs
     public VentaService(ProductoRepository productoRepository,
                         VentaRepository ventaRepository,
                         CalculadoraVenta calculadora) { ... }
@@ -474,7 +474,7 @@ public class VentaService implements ConfirmarVentaUseCase, ObtenerVentaUseCase 
     public Venta confirmar(ConfirmarVentaCommand command) {
         if (command.items().isEmpty()) throw new CarritoVacioException();
 
-        // Idempotencia: si la clave ya fue procesada, retornar la venta existente (SPEC-BE-003)
+        // Idempotency: if the key was already processed, return the existing sale (SPEC-BE-003)
         if (command.idempotencyKey() != null) {
             Optional<Venta> existente = ventaRepository.findByIdempotencyKey(command.idempotencyKey());
             if (existente.isPresent()) return existente.get();
@@ -490,8 +490,8 @@ public class VentaService implements ConfirmarVentaUseCase, ObtenerVentaUseCase 
 
         productos.forEach(p -> p.descontarStock(cantidadDe(p, command)));
         productoRepository.saveAll(productos);
-        // Si saveAll lanza OptimisticLockException (concurrencia), el adaptador la convierte
-        // en ConflictoStockException → GlobalExceptionHandler → 409 CONFLICTO_STOCK (SPEC-BE-007)
+        // If saveAll throws OptimisticLockException (concurrency), the adapter converts it
+        // to ConflictoStockException → GlobalExceptionHandler → 409 CONFLICTO_STOCK (SPEC-BE-007)
 
         Venta venta = new Venta(generarId(), items, resumen, EstadoVenta.COMPLETADA,
                                 Instant.now(), command.idempotencyKey());
@@ -506,7 +506,7 @@ public class VentaService implements ConfirmarVentaUseCase, ObtenerVentaUseCase 
 }
 ```
 
-### Calculadora de venta (servicio de dominio puro)
+### Sale Calculator (Pure Domain Service)
 
 ```java
 // domain/service/CalculadoraVenta.java
@@ -528,9 +528,9 @@ public class CalculadoraVenta {
 
 ---
 
-## 9. Cableado de dependencias — BeanConfig
+## 9. Dependency Wiring — BeanConfig
 
-`BeanConfig` es la única clase que conoce tanto las interfaces del dominio como las implementaciones concretas. Es el punto de ensamblaje de la arquitectura hexagonal.
+`BeanConfig` is the only class that knows both the domain interfaces and the concrete implementations. It is the assembly point of the hexagonal architecture.
 
 ```java
 // infrastructure/config/BeanConfig.java
@@ -583,15 +583,15 @@ public class BeanConfig {
 }
 ```
 
-> Spring inyecta `ProductoRepository` y `VentaRepository` con sus implementaciones JPA (`ProductoJpaAdapter`, `VentaJpaAdapter`) porque esas clases tienen `@Repository` y están en el classpath. El dominio nunca ve esas clases concretas.
+> Spring injects `ProductoRepository` and `VentaRepository` with their JPA implementations (`ProductoJpaAdapter`, `VentaJpaAdapter`) because those classes have `@Repository` and are on the classpath. The domain never sees those concrete classes.
 
-> En tests unitarios, `BeanConfig` no se carga. Los servicios se instancian directamente con mocks de Mockito.
+> In unit tests, `BeanConfig` is not loaded. Services are instantiated directly with Mockito mocks.
 
 ---
 
-## 10. Adaptadores
+## 10. Adapters
 
-### Adaptador de entrada: Controllers (REST)
+### Inbound Adapter: Controllers (REST)
 
 ```java
 // infrastructure/adapter/in/web/ProductoController.java
@@ -602,7 +602,7 @@ public class ProductoController {
     private final BuscarProductosUseCase buscarProductos;
     private final ObtenerProductoUseCase obtenerProducto;
 
-    // DIP: inyeccion de interfaces, no de implementaciones concretas
+    // DIP: injection of interfaces, not concrete implementations
     public ProductoController(BuscarProductosUseCase buscarProductos,
                                ObtenerProductoUseCase obtenerProducto) { ... }
 
@@ -645,9 +645,9 @@ public class VentaController {
 }
 ```
 
-> **Nota:** `@Transactional` se coloca en el controller (o en un servicio de aplicación) para garantizar la atomicidad de SPEC-BE-003. El `VentaService` de dominio no tiene esta anotación porque no depende de Spring.
+> **Note:** `@Transactional` is placed on the controller (or an application service) to guarantee the atomicity of SPEC-BE-003. The domain `VentaService` does not have this annotation because it does not depend on Spring.
 
-### Adaptador de salida: JPA Repositories
+### Outbound Adapter: JPA Repositories
 
 ```java
 // infrastructure/adapter/out/persistence/ProductoJpaAdapter.java
@@ -680,7 +680,7 @@ public class ProductoJpaAdapter implements ProductoRepository {
 }
 ```
 
-### Manejador global de errores
+### Global Error Handler
 
 ```java
 // infrastructure/adapter/in/web/GlobalExceptionHandler.java
@@ -729,6 +729,59 @@ public class GlobalExceptionHandler {
             .map(e -> e.getField() + ": " + e.getDefaultMessage())
             .collect(Collectors.joining(", "));
         return ResponseEntity.status(400)
+            .body(ErrorResponse.of("VALIDACION_FALLIDA", mensaje));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        // log.error("Unexpected error", ex) — log internally, do not expose to client
+        return ResponseEntity.status(500)
+            .body(ErrorResponse.of("ERROR_INTERNO", "An unexpected error occurred."));
+    }
+
+    @ExceptionHandler(ConflictoStockException.class)
+    public ResponseEntity<ErrorResponse> handle(ConflictoStockException ex) {
+        return ResponseEntity.status(409)
+            .body(ErrorResponse.of("CONFLICTO_STOCK",
+                "Stock was modified by another operation. Please retry."));
+    }
+
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ResponseEntity<ErrorResponse> handle(CredencialesInvalidasException ex) {
+        return ResponseEntity.status(401)
+            .body(ErrorResponse.of("CREDENCIALES_INVALIDAS", "Invalid username or password."));
+    }
+
+    @ExceptionHandler(TokenInvalidoException.class)
+    public ResponseEntity<ErrorResponse> handle(TokenInvalidoException ex) {
+        return ResponseEntity.status(401)
+            .body(ErrorResponse.of("TOKEN_INVALIDO", "Session has expired. Please log in again."));
+    }
+
+    @ExceptionHandler(AccesoDenegadoException.class)
+    public ResponseEntity<ErrorResponse> handle(AccesoDenegadoException ex) {
+        return ResponseEntity.status(403)
+            .body(ErrorResponse.of("ACCESO_DENEGADO", "You do not have permission to perform this operation."));
+    }
+
+    @ExceptionHandler(VentaYaDevueltaException.class)
+    public ResponseEntity<ErrorResponse> handle(VentaYaDevueltaException ex) {
+        return ResponseEntity.status(422)
+            .body(ErrorResponse.of("VENTA_YA_DEVUELTA", ex.getMessage()));
+    }
+
+    @ExceptionHandler(VentaNoDevolvibleException.class)
+    public ResponseEntity<ErrorResponse> handle(VentaNoDevolvibleException ex) {
+        return ResponseEntity.status(422)
+            .body(ErrorResponse.of("VENTA_NO_DEVOLVIBLE", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ProductoDuplicadoException.class)
+    public ResponseEntity<ErrorResponse> handle(ProductoDuplicadoException ex) {
+        return ResponseEntity.status(409)
+            .body(ErrorResponse.of("PRODUCTO_DUPLICADO", ex.getMessage()));
+    }
+})
             .body(ErrorResponse.of("VALIDACION_FALLIDA", mensaje));
     }
 
@@ -786,7 +839,7 @@ public class GlobalExceptionHandler {
 
 ---
 
-## 11. Estructura de directorios
+## 11. Directory Structure
 
 ```
 src/main/java/com/pos/
@@ -802,12 +855,12 @@ src/main/java/com/pos/
 |   |   +-- Devolucion.java           <- SPEC-BE-009
 |   |   +-- ReporteCierre.java        <- Value Object (SPEC-BE-011)
 |   |   +-- VentasPorCajero.java      <- Value Object (SPEC-BE-011)
-|   |   +-- PagoItem.java             <- Value Object (SPEC-BE-003 + métodos de pago)
+|   |   +-- PagoItem.java             <- Value Object (SPEC-BE-003 + payment methods)
 |   |   +-- MetodoPago.java           <- Enum: EFECTIVO, TARJETA_DEBITO, etc.
 |   |   +-- Dinero.java              <- Value Object (record)
 |   |   +-- ResumenVenta.java        <- Value Object (record)
-|   |   +-- ResumenVentaSimple.java  <- Value Object para historial (SPEC-BE-006)
-|   |   +-- PageResponse.java        <- Value Object generico paginacion (SPEC-BE-001b)
+|   |   +-- ResumenVentaSimple.java  <- Value Object for history (SPEC-BE-006)
+|   |   +-- PageResponse.java        <- Generic pagination Value Object (SPEC-BE-001b)
 |   |   +-- EstadoVenta.java         <- Enum: COMPLETADA, CANCELADA, DEVUELTA
 |   |
 |   +-- port/
@@ -822,22 +875,22 @@ src/main/java/com/pos/
 |   |   |   +-- DevolverVentaUseCase.java     <- SPEC-BE-009
 |   |   |   +-- GestionarProductoUseCase.java <- SPEC-BE-010
 |   |   |   +-- GenerarReporteUseCase.java    <- SPEC-BE-011
-|   |   |   +-- ConfirmarVentaCommand.java    <- incluye idempotencyKey (SPEC-BE-003)
-|   |   +-- out/                     <- Repositorios (interfaces)
+|   |   |   +-- ConfirmarVentaCommand.java    <- includes idempotencyKey (SPEC-BE-003)
+|   |   +-- out/                     <- Repositories (interfaces)
 |   |       +-- ProductoRepository.java
 |   |       +-- VentaRepository.java
 |   |       +-- UsuarioRepository.java    <- SPEC-BE-008
-|   |       +-- TokenRepository.java      <- SPEC-BE-008 (blacklist JWT)
+|   |       +-- TokenRepository.java      <- SPEC-BE-008 (JWT blacklist)
 |   |
 |   +-- service/
-|   |   +-- ProductoService.java     <- POJO, implementa BuscarProductos + ObtenerProducto
-|   |   +-- VentaService.java        <- POJO, implementa ConfirmarVenta + ObtenerVenta
-|   |   +-- ListarVentasService.java <- POJO, implementa ListarVentasUseCase (SPEC-BE-006)
-|   |   +-- AuthService.java         <- POJO, implementa LoginUseCase + LogoutUseCase (SPEC-BE-008)
-|   |   +-- DevolucionService.java   <- POJO, implementa DevolverVentaUseCase (SPEC-BE-009)
-|   |   +-- InventarioService.java   <- POJO, implementa GestionarProductoUseCase (SPEC-BE-010)
-|   |   +-- ReporteService.java      <- POJO, implementa GenerarReporteUseCase (SPEC-BE-011)
-|   |   +-- CalculadoraVenta.java    <- POJO, servicio de dominio puro
+|   |   +-- ProductoService.java     <- POJO, implements BuscarProductos + ObtenerProducto
+|   |   +-- VentaService.java        <- POJO, implements ConfirmarVenta + ObtenerVenta
+|   |   +-- ListarVentasService.java <- POJO, implements ListarVentasUseCase (SPEC-BE-006)
+|   |   +-- AuthService.java         <- POJO, implements LoginUseCase + LogoutUseCase (SPEC-BE-008)
+|   |   +-- DevolucionService.java   <- POJO, implements DevolverVentaUseCase (SPEC-BE-009)
+|   |   +-- InventarioService.java   <- POJO, implements GestionarProductoUseCase (SPEC-BE-010)
+|   |   +-- ReporteService.java      <- POJO, implements GenerarReporteUseCase (SPEC-BE-011)
+|   |   +-- CalculadoraVenta.java    <- POJO, pure domain service
 |   |
 |   +-- exception/
 |       +-- StockInsuficienteException.java
@@ -861,8 +914,8 @@ src/main/java/com/pos/
     |   |       +-- ProductoController.java
     |   |       +-- VentaController.java
     |   |       +-- AuthController.java           <- SPEC-BE-008 (login/logout)
-    |   |       +-- AdminProductoController.java  <- SPEC-BE-010 (solo ADMIN)
-    |   |       +-- ReporteController.java        <- SPEC-BE-011 (solo ADMIN)
+    |   |       +-- AdminProductoController.java  <- SPEC-BE-010 (ADMIN only)
+    |   |       +-- ReporteController.java        <- SPEC-BE-011 (ADMIN only)
     |   |       +-- GlobalExceptionHandler.java
     |   |       +-- dto/
     |   |       |   +-- request/
@@ -885,13 +938,13 @@ src/main/java/com/pos/
     |   |
     |   +-- out/
     |       +-- persistence/
-    |           +-- ProductoJpaAdapter.java    <- implementa ProductoRepository
-    |           +-- VentaJpaAdapter.java       <- implementa VentaRepository
-    |           +-- UsuarioJpaAdapter.java     <- implementa UsuarioRepository (SPEC-BE-008)
-    |           +-- TokenJpaAdapter.java       <- implementa TokenRepository (SPEC-BE-008)
+    |           +-- ProductoJpaAdapter.java    <- implements ProductoRepository
+    |           +-- VentaJpaAdapter.java       <- implements VentaRepository
+    |           +-- UsuarioJpaAdapter.java     <- implements UsuarioRepository (SPEC-BE-008)
+    |           +-- TokenJpaAdapter.java       <- implements TokenRepository (SPEC-BE-008)
     |           +-- entity/
     |           |   +-- ProductoEntity.java    <- @Entity JPA + @Version (optimistic locking SPEC-BE-007)
-    |           |   +-- VentaEntity.java       <- @Column(unique=true) en idempotencyKey (SPEC-BE-003)
+    |           |   +-- VentaEntity.java       <- @Column(unique=true) on idempotencyKey (SPEC-BE-003)
     |           |   +-- ItemVentaEntity.java
     |           |   +-- UsuarioEntity.java     <- @Entity JPA (SPEC-BE-008)
     |           |   +-- TokenBlacklistEntity.java <- @Entity JPA (SPEC-BE-008)
@@ -903,8 +956,8 @@ src/main/java/com/pos/
     |               +-- VentaEntityMapper.java
     |
     +-- config/
-        +-- BeanConfig.java    <- @Configuration: cablea interfaces con implementaciones
-        +-- CorsConfig.java    <- permite origen del frontend (localhost:5173)
+        +-- BeanConfig.java    <- @Configuration: wires interfaces with implementations
+        +-- CorsConfig.java    <- allows frontend origin (localhost:5173)
 
 src/test/java/com/pos/
     +-- domain/
@@ -922,7 +975,7 @@ src/test/java/com/pos/
 
 ---
 
-## 12. Configuracion de dependencias (pom.xml — fragmento clave)
+## 12. Dependency Configuration (pom.xml — key fragment)
 
 ```xml
 <dependencies>
@@ -941,13 +994,13 @@ src/test/java/com/pos/
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-security</artifactId>
-        <!-- SPEC-BE-008: autenticación JWT -->
+        <!-- SPEC-BE-008: JWT authentication -->
     </dependency>
     <dependency>
         <groupId>io.jsonwebtoken</groupId>
         <artifactId>jjwt-api</artifactId>
         <version>0.12.3</version>
-        <!-- SPEC-BE-008: generación y validación de tokens JWT -->
+        <!-- SPEC-BE-008: JWT token generation and validation -->
     </dependency>
     <dependency>
         <groupId>io.jsonwebtoken</groupId>
@@ -964,45 +1017,45 @@ src/test/java/com/pos/
         <groupId>org.postgresql</groupId>
         <artifactId>postgresql</artifactId>
         <scope>runtime</scope>
-        <!-- Producción: reemplaza H2 -->
+        <!-- Production: replaces H2 -->
     </dependency>
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-test</artifactId>
         <scope>test</scope>
-        <!-- Incluye JUnit 5, Mockito y MockMvc -->
+        <!-- Includes JUnit 5, Mockito and MockMvc -->
     </dependency>
     <dependency>
         <groupId>net.jqwik</groupId>
         <artifactId>jqwik</artifactId>
         <version>1.8.3</version>
         <scope>test</scope>
-        <!-- Property-Based Testing para CalculadoraVenta -->
+        <!-- Property-Based Testing for CalculadoraVenta -->
     </dependency>
 </dependencies>
 ```
 
 ---
 
-## 13. Decisiones de diseño justificadas por las specs
+## 13. Design Decisions Justified by Specs
 
-| Decision | Spec que la justifica |
+| Decision | Justifying spec |
 |---|---|
-| Servicios de dominio como POJOs (sin @Service) | DIP: el dominio no puede depender de Spring. `BeanConfig` hace el cableado en infraestructura. |
-| `CalculadoraVenta` como POJO separado | SPEC-BE-003 requiere calculo de IVA, subtotal y cambio — SRP: una clase, una razon para cambiar. |
-| `Dinero` como Value Object inmutable con `menos()` | SPEC-BE-003 opera con sumas y restas monetarias — `menos()` es necesario para calcular el cambio. |
-| `@Transactional` en el controller, no en el servicio | SPEC-BE-003 exige atomicidad. El servicio de dominio no puede tener anotaciones de Spring. |
-| Excepciones de dominio sin dependencia de Spring | SPEC-BE-005 exige mapeo uniforme — `GlobalExceptionHandler` en infraestructura hace esa traduccion. |
-| Interfaces separadas por caso de uso (ISP) | `ProductoController` no deberia depender de metodos de venta. `LoginUseCase` separado de `LogoutUseCase`. |
-| Mapper explicito entre entidad JPA y modelo de dominio | El modelo de dominio no puede tener anotaciones JPA — hacerlo violaria la independencia del dominio. |
-| `CANTIDAD_INVALIDA` como codigo de error propio | SPEC-BE-003 define `cantidad <= 0` como caso de error diferenciado. |
-| `idempotencyKey` en `ConfirmarVentaCommand` y `VentaEntity` | SPEC-BE-003: el frontend puede reintentar por timeout — sin idempotencia se crean ventas duplicadas. |
-| `@Version` en `ProductoEntity` | SPEC-BE-007: dos cajeros vendiendo el ultimo stock simultaneamente — optimistic locking garantiza consistencia. |
-| `PageResponse<T>` como Value Object generico | SPEC-BE-001b y SPEC-BE-006 requieren paginacion — un VO reutilizable evita duplicar la logica. |
-| `ListarVentasService` separado de `VentaService` | SRP: listar ventas es una responsabilidad distinta a confirmar ventas. |
-| `AuthService` como POJO de dominio | SPEC-BE-008: la logica de autenticacion (validar credenciales, generar token) es logica de negocio, no de infraestructura. |
-| `TokenRepository` para blacklist de JWT | SPEC-BE-008: el logout debe invalidar el token en el servidor para evitar reutilizacion tras cierre de sesion. |
-| `AccesoDenegadoException` en dominio | SPEC-BE-010, SPEC-BE-011: el control de acceso por rol es logica de negocio — el dominio lanza la excepcion, el handler la mapea a 403. |
-| `DevolucionService` separado de `VentaService` | SRP: devolver una venta (restaurar stock, cambiar estado) es una responsabilidad distinta a confirmarla. |
-| `ReporteService` separado | SRP: generar reportes agrega datos historicos — responsabilidad distinta a las operaciones transaccionales. |
-| `EstadoVenta` incluye `DEVUELTA` | SPEC-BE-009: una venta devuelta debe tener un estado diferenciado para evitar doble devolucion. |
+| Domain services as POJOs (no @Service) | DIP: the domain cannot depend on Spring. `BeanConfig` does the wiring in infrastructure. |
+| `CalculadoraVenta` as a separate POJO | SPEC-BE-003 requires VAT, subtotal and change calculation — SRP: one class, one reason to change. |
+| `Dinero` as an immutable Value Object with `menos()` | SPEC-BE-003 operates with monetary additions and subtractions — `menos()` is needed to calculate change. |
+| `@Transactional` on the controller, not the service | SPEC-BE-003 requires atomicity. The domain service cannot have Spring annotations. |
+| Domain exceptions without Spring dependency | SPEC-BE-005 requires uniform mapping — `GlobalExceptionHandler` in infrastructure does that translation. |
+| Separate interfaces per use case (ISP) | `ProductoController` should not depend on sale methods. `LoginUseCase` separate from `LogoutUseCase`. |
+| Explicit mapper between JPA entity and domain model | The domain model cannot have JPA annotations — doing so would violate domain independence. |
+| `CANTIDAD_INVALIDA` as its own error code | SPEC-BE-003 defines `cantidad <= 0` as a differentiated error case. |
+| `idempotencyKey` in `ConfirmarVentaCommand` and `VentaEntity` | SPEC-BE-003: the frontend may retry on timeout — without idempotency, duplicate sales are created. |
+| `@Version` on `ProductoEntity` | SPEC-BE-007: two cashiers selling the last stock simultaneously — optimistic locking guarantees consistency. |
+| `PageResponse<T>` as a generic Value Object | SPEC-BE-001b and SPEC-BE-006 require pagination — a reusable VO avoids duplicating the logic. |
+| `ListarVentasService` separate from `VentaService` | SRP: listing sales is a different responsibility from confirming sales. |
+| `AuthService` as a domain POJO | SPEC-BE-008: authentication logic (validate credentials, generate token) is business logic, not infrastructure. |
+| `TokenRepository` for JWT blacklist | SPEC-BE-008: logout must invalidate the token on the server to prevent reuse after session close. |
+| `AccesoDenegadoException` in domain | SPEC-BE-010, SPEC-BE-011: role-based access control is business logic — the domain throws the exception, the handler maps it to 403. |
+| `DevolucionService` separate from `VentaService` | SRP: returning a sale (restore stock, change state) is a different responsibility from confirming it. |
+| `ReporteService` separate | SRP: generating reports aggregates historical data — different responsibility from transactional operations. |
+| `EstadoVenta` includes `DEVUELTA` | SPEC-BE-009: a returned sale must have a differentiated state to prevent double returns. |
