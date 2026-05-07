@@ -377,9 +377,13 @@ Para soporte técnico o preguntas:
 - 📖 Documentación: [docs/](docs/)
 - 🐛 Reportar bugs: [GitHub Issues](https://github.com/your-repo/pos/issues)
 
----
+## 📚 Documentación
 
-*Proyecto desarrollado con ❤️ siguiendo mejores prácticas de desarrollo de software.*
+- **[Guía de Desarrollo](docs/DEVELOPMENT.md)** - Setup completo, arquitectura y flujo de trabajo
+- **[Solución de Problemas](docs/TROUBLESHOOTING.md)** - Diagnóstico y resolución de issues comunes
+- **[Referencia de API](docs/API_REFERENCE.md)** - Documentación completa de endpoints
+- **[Guía de Testing](docs/TESTING.md)** - Estrategias y mejores prácticas
+- **[Despliegue](docs/DEPLOYMENT.md)** - Configuración para producción
 
 ---
 
