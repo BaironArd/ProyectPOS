@@ -341,24 +341,23 @@ npm run test:e2e  # Si implementado
 ```
 PROYECTPOS/
 ├── backend/
-│   ├── pos-backend/
-│   │   ├── src/main/java/com/pos/
-│   │   │   ├── domain/           # Lógica de negocio pura
-│   │   │   ├── application/      # Casos de uso
-│   │   │   ├── infrastructure/   # Adaptadores externos
-│   │   │   └── config/           # Configuración Spring
-│   │   └── src/test/             # Tests
-│   └── docs/                     # Documentación backend
+│   ├── .kiro/specs/          # Spec docs (design, requirements, tasks)
+│   └── pos-backend/
+│       ├── src/main/java/com/pos/
+│       │   ├── domain/           # Pure business logic
+│       │   ├── infrastructure/   # External adapters
+│       │   └── config/           # Spring configuration
+│       └── src/test/             # Tests
 ├── frontend/
-│   ├── pos-frontend/
-│   │   ├── src/
-│   │   │   ├── domain/           # Tipos y lógica pura
-│   │   │   ├── application/      # Hooks y store
-│   │   │   ├── infrastructure/   # Adaptadores HTTP
-│   │   │   └── ui/               # Componentes React
-│   │   └── tests/                # Tests frontend
-│   └── docs/                     # Documentación frontend
-└── docs/                         # Documentación general
+│   ├── .kiro/specs/          # Spec docs (design, requirements, tasks)
+│   └── pos-frontend/
+│       ├── src/
+│       │   ├── domain/           # Types and pure logic
+│       │   ├── application/      # Hooks and store
+│       │   ├── infrastructure/   # HTTP adapters
+│       │   └── ui/               # React components
+│       └── tests/                # Frontend tests
+└── docs/                         # General documentation
 ```
 
 ---
@@ -644,27 +643,27 @@ mvn test
 ProyectPOS/
 ├── PROYECTPOS/
 │   ├── frontend/
-│   │   ├── pos-frontend/          ← Aplicación React
-│   │   │   ├── src/
-│   │   │   │   ├── domain/        ← Tipos, puertos, calculadora
-│   │   │   │   ├── application/   ← Store Zustand + hooks
-│   │   │   │   ├── infrastructure/← Adaptadores HTTP + mocks
-│   │   │   │   └── ui/            ← Componentes React
-│   │   │   └── package.json
-│   │   ├── diseno.md
-│   │   ├── especificaciones.md
-│   │   └── tareas.md
+│   │   ├── .kiro/
+│   │   │   └── specs/             ← Spec docs (design, requirements, tasks)
+│   │   └── pos-frontend/          ← React application
+│   │       ├── src/
+│   │       │   ├── domain/        ← Types, ports, calculator
+│   │       │   ├── application/   ← Zustand store + hooks
+│   │       │   ├── infrastructure/← HTTP adapters + mocks
+│   │       │   └── ui/            ← React components
+│   │       └── package.json
 │   │
 │   └── backend/
-│       ├── pos-backend/           ← API Spring Boot
-│       │   ├── src/main/java/com/pos/
-│       │   │   ├── domain/        ← Entidades, servicios, puertos
-│       │   │   └── infrastructure/← Controllers, JPA, Security
-│       │   └── pom.xml
-│       ├── diseno_backend.md
-│       ├── especificaciones_backend.md
-│       └── tareas_backend.md
+│       ├── .kiro/
+│       │   └── specs/             ← Spec docs (design, requirements, tasks)
+│       └── pos-backend/           ← Spring Boot API
+│           ├── src/main/java/com/pos/
+│           │   ├── domain/        ← Entities, services, ports
+│           │   └── infrastructure/← Controllers, JPA, Security
+│           └── pom.xml
 │
+├── docs/                          ← General documentation
+├── docker-compose.yml
 └── README.md
 ```
 
