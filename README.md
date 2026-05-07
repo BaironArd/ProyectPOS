@@ -32,10 +32,12 @@ ProyectPOS es un sistema de punto de venta diseñado para cajeros y administrado
 ### Capturas de pantalla
 
 *Vista principal del POS - búsqueda y carrito*
-![Vista principal del POS](https://via.placeholder.com/800x400?text=POS+Main+Screen)
+<img width="1868" height="946" alt="image" src="https://github.com/user-attachments/assets/6d585d84-e7d9-4b6d-810a-88704864b2a4" />
+
 
 *Diagrama de arquitectura hexagonal*
-![Arquitectura Hexagonal](https://via.placeholder.com/800x400?text=Hexagonal+Architecture+Diagram)
+<img width="1408" height="768" alt="Gemini_Generated_Image_1utzih1utzih1utz" src="https://github.com/user-attachments/assets/02a67800-272b-4b6d-9d24-84a2f97f207c" />
+
 
 ---
 
@@ -410,7 +412,7 @@ src/
 └── ui/              ← componentes React
 ```
 
-> **[imagen de la arquitectura hexagonal del frontend con las 4 capas]**
+<img width="1408" height="768" alt="Gemini_Generated_Image_cc5vi0cc5vi0cc5v" src="https://github.com/user-attachments/assets/6aba8d6c-c77d-48a1-b0c1-808bb4ab9237" />
 
 ### Máquina de estados de UI
 
@@ -422,30 +424,37 @@ LOGIN → IDLE → BUSCANDO → RESULTADOS → CARRITO_ACTIVO
      → HISTORIAL / DEVOLUCION / INVENTARIO / REPORTES / ERROR
 ```
 
-> **[imagen del diagrama de estados de la máquina de estados del frontend]**
+<img width="1408" height="768" alt="Gemini_Generated_Image_lxzdwvlxzdwvlxzd" src="https://github.com/user-attachments/assets/114f76bf-3909-44bc-8d25-57cd545c3156" />
 
 ### Pantallas principales
 
 #### Pantalla de login
-> **[imagen de la pantalla de login con campos usuario y contraseña]**
+<img width="1868" height="950" alt="image" src="https://github.com/user-attachments/assets/8d6987a4-313f-4e9a-a7d1-b7744fc1b8af" />
+
 
 #### Flujo de venta — Búsqueda y carrito
-> **[imagen del flujo principal: SearchBar + ProductList + Cart + OrderSummary]**
+<img width="1861" height="946" alt="image" src="https://github.com/user-attachments/assets/b66e894e-7d9c-4551-955f-a7649c02fad9" />
+
 
 #### Panel de pago
-> **[imagen del PaymentPanel con selector de método de pago y cálculo de cambio]**
+<img width="1867" height="946" alt="image" src="https://github.com/user-attachments/assets/c6451123-230c-4a46-b8a4-6cb886aee9ec" />
+
 
 #### Venta completada
-> **[imagen de la pantalla de venta completada con mensaje de éxito y botón de recibo]**
+<img width="1868" height="949" alt="image" src="https://github.com/user-attachments/assets/c0a6f869-5302-4136-aad5-3484b81d4e74" />
+
 
 #### Historial de ventas
-> **[imagen del componente SalesHistory con tabla de ventas del turno]**
+<img width="1865" height="944" alt="image" src="https://github.com/user-attachments/assets/55f08a58-b52b-425a-999c-1e29d5052010" />
+
 
 #### Panel de inventario (Admin)
-> **[imagen del InventoryPanel con tabla de productos y modal de edición]**
+<img width="1870" height="952" alt="image" src="https://github.com/user-attachments/assets/f7e96fd3-f5e0-4a86-bb55-45bf6d81fca8" />
+
 
 #### Reportes de cierre de caja (Admin)
-> **[imagen del ReportsPanel con selector de fechas y resumen de ventas]**
+<img width="1865" height="951" alt="image" src="https://github.com/user-attachments/assets/70516ae3-79b0-49ff-9855-99f86afff2a4" />
+
 
 ---
 
@@ -473,7 +482,7 @@ domain/port/out/                  ← Repositorios (interfaces)
 infrastructure/adapter/out/       ← JPA Adapters
 ```
 
-> **[imagen del diagrama de arquitectura hexagonal del backend con las capas]**
+<img width="1408" height="768" alt="Gemini_Generated_Image_1utzih1utzih1utz" src="https://github.com/user-attachments/assets/255d0c82-287f-4878-9e29-4a9dbad60aa7" />
 
 ### Endpoints principales
 
@@ -514,7 +523,7 @@ infrastructure/adapter/out/       ← JPA Adapters
 }
 ```
 
-> **[imagen del diagrama de secuencia de confirmación de venta (POST /api/v1/ventas)]**
+<img width="1408" height="768" alt="Gemini_Generated_Image_yc424uyc424uyc42" src="https://github.com/user-attachments/assets/8dde2cc9-e013-4b90-9562-2164d0a8bc83" />
 
 ---
 
@@ -593,7 +602,6 @@ mvn test
 8. Imprime el recibo (opcional)
 ```
 
-> **[imagen del flujo completo de venta paso a paso]**
 
 ### Flujo de devolución
 
